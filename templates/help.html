@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Help Center & Forensic Guide{% endblock %}
+{% block page_title %}Forensic Help Center{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 260px 1fr; gap: 24px; align-items: start;">
+  <!-- Quick Navigation Submenu -->
+  <div class="card" style="position: sticky; top: 20px;">
+    <div style="font-weight: 600; color: var(--navy-primary); margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+      Help Topics
+    </div>
+    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+      <li><a href="#getting-started" style="color: var(--blue-primary); font-weight: 500;">Getting Started</a></li>
+      <li><a href="#single-analysis" style="color: var(--text-secondary);">Single Image Analysis</a></li>
+      <li><a href="#pinterest-social" style="color: var(--text-secondary);">Pinterest & Social Media Guide</a></li>
+      <li><a href="#two-file-compare" style="color: var(--text-secondary);">Two-Image Comparison</a></li>
+      <li><a href="#interpreting-metadata" style="color: var(--text-secondary);">Interpreting EXIF, IPTC, XMP</a></li>
+      <li><a href="#sha256-explanation" style="color: var(--text-secondary);">Understanding SHA-256 Hashes</a></li>
+      <li><a href="#classification-definitions" style="color: var(--text-secondary);">Result Classifications</a></li>
+      <li><a href="#troubleshooting-faq" style="color: var(--text-secondary);">Troubleshooting & FAQs</a></li>
+      <li><a href="{{ url_for('feedback') }}" style="color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 4px; display: block;">Submit Feedback / Bug</a></li>
+    </ul>
+  </div>
+
+  <!-- Documentation Body -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- 1. Getting Started -->
+    <div class="card" id="getting-started">
+      <div class="card-header">
+        <div>
+          <div class="card-title">1. Getting Started with TRACE Workbench</div>
+          <div class="card-subtitle">Overview of the platform architecture and standard investigator workflows</div>
+        </div>
+      </div>
+      <p style="margin-bottom: 12px;">
+        TRACE (Tamper Recognition & Anomaly Checking Engine) is an academic digital forensics workbench designed to inspect media metadata, identify chronological inconsistencies, detect software editing traces, and compare paired evidence files using Phil Harvey's ExifTool backend.
+      </p>
+      <div style="background: #f8fafc; border-left: 4px solid var(--blue-primary); padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; color: var(--navy-primary); line-height: 1.5;">
+        <strong>Forensic Cardinal Rule:</strong> Metadata consistency does not guarantee authenticity, and missing metadata does not prove malicious tampering. Forensics relies on corroborating multiple independent technical indicators.
+      </div>
+    </div>
+
+    <!-- 2. Single Image Analysis -->
+    <div class="card" id="single-analysis">
+      <div class="card-header">
+        <div>
+          <div class="card-title">2. Single Image Forensic Analysis</div>
+          <div class="card-subtitle">Analyzing evidence files when the original camera raw file is unavailable</div>
+        </div>
+      </div>
+      <p style="margin-bottom: 12px;">
+        When conducting investigations in the real world, forensic analysts frequently receive solitary files downloaded from internet forums, messaging apps, or storage drives without access to the originating camera.
+      </p>
+      <h4 style="margin: 16px 0 8px 0; font-size: 14px;">How to Execute Single Image Analysis:</h4>
+      <ol style="padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+        <li>Navigate to <strong>Single Image Analysis</strong> from the sidebar.</li>
+        <li>Drag and drop or select your evidence file (JPEG, PNG, TIFF, WebP, or HEIC).</li>
+        <li>Specify an optional <strong>Case Identifier</strong> for chain-of-custody tracking.</li>
+        <li>Select the appropriate <strong>Image Source Context</strong> (Camera, Downloaded/Social, Messaging App, or Unknown).</li>
+        <li>Click <strong>Analyze Image</strong> to run ExifTool tag extraction, SHA-256 calculation, and rule evaluation.</li>
+        <li>Review the <strong>Executive Summary</strong>, <strong>Integrity Checks</strong>, and <strong>Forensic Dossier</strong>.</li>
+      </ol>
+    </div>
+
+    <!-- 3. Pinterest & Social Media Guide -->
+    <div class="card" id="pinterest-social" style="border-left: 4px solid #d97706;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">3. Why Pinterest & Social Media Images Lack Original Metadata</div>
+          <div class="card-subtitle">Understanding platform recompression, privacy stripping, and filesystem timestamps</div>
+        </div>
+        <span class="badge badge-warning">Essential Knowledge</span>
+      </div>
+      <p style="margin-bottom: 12px;">
+        When an image is uploaded to platforms such as Pinterest, Instagram, Facebook, X, or messaging platforms like WhatsApp, automated processing pipelines process the file immediately:
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-md);">
+          <strong style="color: var(--navy-primary); font-size: 13px; display: block; margin-bottom: 4px;">Privacy & Location Scrubbing</strong>
+          <p style="font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+            Platforms intentionally remove GPS latitude/longitude, camera serial numbers, and owner tags to protect user privacy and avoid stalking liabilities.
+          </p>
+        </div>
+        <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 14px; border-radius: var(--radius-md);">
+          <strong style="color: var(--navy-primary); font-size: 13px; display: block; margin-bottom: 4px;">Bandwidth & Image Recompression</strong>
+          <p style="font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+            Servers transcode images into optimized formats (e.g., standard WebP or JPEG 80% quality) with custom quantization tables, discarding nonessential EXIF/IPTC segments.
+          </p>
+        </div>
+      </div>
+      
+      <h4 style="margin: 12px 0 8px 0; font-size: 14px;">Distinguishing Filesystem Timestamps from Metadata Timestamps:</h4>
+      <p style="font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 12px;">
+        A common beginner mistake is confusing the file download date on your computer with the photograph capture date:
+      </p>
+      <ul style="padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+        <li><strong>File System Modification Date (FileModifyDate):</strong> Reflects when the file was saved or written to your local hard drive.</li>
+        <li><strong>Original Capture Date (DateTimeOriginal):</strong> Recorded by the camera hardware clock when the sensor shutter opened.</li>
+      </ul>
+      <p style="font-size: 13px; line-height: 1.5; color: var(--text-secondary);">
+        In social media images, <code>DateTimeOriginal</code> is almost always missing, while <code>FileModifyDate</code> reflects the exact second you clicked "Save Image" from Pinterest. TRACE automatically flags this distinction and will <strong>not</strong> misclassify this expected behavior as suspicious.
+      </p>
+    </div>
+
+    <!-- 4. Two-Image Comparison -->
+    <div class="card" id="two-file-compare">
+      <div class="card-header">
+        <div>
+          <div class="card-title">4. Two-Image Differential Comparison</div>
+          <div class="card-subtitle">Evaluating reference images against suspected tampered duplicates</div>
+        </div>
+      </div>
+      <p style="margin-bottom: 12px;">
+        When a baseline original image is available, differential analysis provides higher evidentiary confidence:
+      </p>
+      <ul style="padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+        <li><strong>Matching Fields:</strong> Tags that share identical values across both files.</li>
+        <li><strong>Modified Fields:</strong> Tags present in both files but containing divergent values (e.g. modified DateTimeOriginal or Software tags).</li>
+        <li><strong>Missing Fields:</strong> Tags present in File A that were deleted or stripped from File B.</li>
+        <li><strong>Added Fields:</strong> Tags that exist in File B but did not exist in File A (frequently injected by editing suites like Photoshop or GIMP).</li>
+        <li><strong>SHA-256 Digest Discrepancy:</strong> Demonstrates that binary files are not bit-for-bit identical.</li>
+      </ul>
+    </div>
+
+    <!-- 5. Interpreting EXIF, IPTC, XMP -->
+    <div class="card" id="interpreting-metadata">
+      <div class="card-header">
+        <div>
+          <div class="card-title">5. Interpreting Metadata Standards (EXIF, IPTC, XMP)</div>
+          <div class="card-subtitle">Structural overview of standard metadata containers</div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+        <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+          <strong style="color: var(--navy-primary);">EXIF (Exchangeable Image File Format):</strong>
+          <p style="color: var(--text-secondary); margin-top: 4px;">Contains hardware parameters written directly by the camera at capture time (Make, Model, Lens, FNumber, ExposureTime, ISO, DateTimeOriginal, GPSInfo).</p>
+        </div>
+        <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+          <strong style="color: var(--navy-primary);">IPTC (International Press Telecommunications Council):</strong>
+          <p style="color: var(--text-secondary); margin-top: 4px;">Contains editorial and rights management information (Headline, Caption, Byline, CopyrightNotice, Credit). Frequently populated by journalists or photo agencies.</p>
+        </div>
+        <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+          <strong style="color: var(--navy-primary);">XMP (Extensible Metadata Platform):</strong>
+          <p style="color: var(--text-secondary); margin-top: 4px;">XML-based container created by Adobe. Tracks post-processing history (HistoryAction, ModifyDate, SoftwareAgent, DerivedFrom) and synchronization between software editors.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Understanding SHA-256 Hashes -->
+    <div class="card" id="sha256-explanation">
+      <div class="card-header">
+        <div>
+          <div class="card-title">6. Understanding Cryptographic Hashes (SHA-256)</div>
+          <div class="card-subtitle">Binary integrity verification and collision resistance</div>
+        </div>
+      </div>
+      <p style="margin-bottom: 12px;">
+        A SHA-256 hash is a deterministic 256-bit cryptographic digest produced by processing every single byte of a file:
+      </p>
+      <ul style="padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+        <li>If even one bit of an image or its metadata changes, the resulting hash changes completely (avalanche effect).</li>
+        <li>Two identical files will always produce the exact same 64-character hexadecimal string.</li>
+        <li><strong>Forensic Limitation:</strong> A differing hash merely proves that two files are not bitwise identical. It does <em>not</em> prove malicious intent, as innocent format conversion or metadata re-encoding also alters the hash.</li>
+      </ul>
+    </div>
+
+    <!-- 7. Result Classifications -->
+    <div class="card" id="classification-definitions">
+      <div class="card-header">
+        <div>
+          <div class="card-title">7. Forensic Result Classifications</div>
+          <div class="card-subtitle">Rigorous definitions applied across all analysis reports</div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="border: 1px solid var(--border-color); border-left: 4px solid var(--error); border-radius: var(--radius-sm); padding: 12px;">
+          <strong style="color: var(--error);">1. Suspicious Indicators Found</strong>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+            Identified explicit chronological contradictions (e.g. ModifyDate preceding DateTimeOriginal), confirmed photo editing software signatures (Photoshop, GIMP) embedded in metadata, or severe tag malformations.
+          </p>
+        </div>
+
+        <div style="border: 1px solid var(--border-color); border-left: 4px solid var(--success); border-radius: var(--radius-sm); padding: 12px;">
+          <strong style="color: var(--success);">2. No Significant Indicators Detected</strong>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+            The extracted metadata is consistent with standard camera capture pipelines, timestamps follow chronological order, and no third-party editor signatures are present. Does not constitute an absolute guarantee of authenticity.
+          </p>
+        </div>
+
+        <div style="border: 1px solid var(--border-color); border-left: 4px solid var(--warning); border-radius: var(--radius-sm); padding: 12px;">
+          <strong style="color: var(--warning);">3. Inconclusive</strong>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+            Insufficient metadata exists to form a conclusive opinion. Common in images downloaded from social media platforms where metadata has been scrubbed. Requires corroboration with secondary physical or provenance evidence.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Troubleshooting & FAQs -->
+    <div class="card" id="troubleshooting-faq">
+      <div class="card-header">
+        <div>
+          <div class="card-title">8. Frequently Asked Questions & Troubleshooting</div>
+          <div class="card-subtitle">Solutions to common operational inquiries</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px; font-size: 13px;">
+        <div>
+          <strong style="color: var(--navy-primary); display: block; margin-bottom: 4px;">Q: Why did my Pinterest image show 'Inconclusive' or 'No Significant Indicators' instead of 'Tampered'?</strong>
+          <p style="color: var(--text-secondary); line-height: 1.5;">
+            Missing metadata is normal for Pinterest and web platforms. Stripping metadata protects user privacy. Declaring an image tampered simply because it lacks GPS or camera tags would lead to high false-positive rates.
+          </p>
+        </div>
+
+        <div>
+          <strong style="color: var(--navy-primary); display: block; margin-bottom: 4px;">Q: Why does the system report that ExifTool is active?</strong>
+          <p style="color: var(--text-secondary); line-height: 1.5;">
+            TRACE interfaces with Phil Harvey's ExifTool in safe, read-only subprocess mode. ExifTool is the gold standard in forensic metadata parsing, handling hundreds of proprietary vendor maker-notes.
+          </p>
+        </div>
+
+        <div>
+          <strong style="color: var(--navy-primary); display: block; margin-bottom: 4px;">Q: How do I export a report for academic or formal submission?</strong>
+          <p style="color: var(--text-secondary); line-height: 1.5;">
+            After completing any analysis, click <strong>Printable Formal Report</strong>. A dedicated, formatted printable view will open. You can use your browser's Print dialog to save it as a PDF or print it on paper.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

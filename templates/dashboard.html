@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Forensic Command Dashboard{% endblock %}
+
+{% block content %}
+<!-- TRACE Digital Forensics Workbench Brand Header Card -->
+<div class="trace-brand-card" style="margin-bottom: 24px;">
+  <div class="trace-icon-wrapper">
+    <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 8 15 V 10 C 8 8.9 8.9 8 10 8 H 15" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 27 8 H 32 C 33.1 8 34 8.9 34 10 V 15" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 8 27 V 32 C 8 33.1 8.9 34 10 34 H 15" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 27 34 H 32 C 33.1 34 34 33.1 34 32 V 27" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="20" cy="20" r="4.2" stroke="#00C2FF" stroke-width="2.4" fill="none"/>
+      <path d="M 23.2 23.2 L 26.5 26.5" stroke="#00C2FF" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="trace-title">TRACE</div>
+  <div class="trace-subtitle">DIGITAL FORENSICS WORKBENCH</div>
+  <div class="trace-divider"></div>
+  <div class="trace-tagline">Uncover the details. Verify the evidence.</div>
+  <div class="trace-subline">Metadata Analysis &middot; Integrity Verification &middot; Evidence Reports</div>
+</div>
+
+<!-- Real Metrics Cards -->
+<div class="stat-card-row">
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Total Investigations</div>
+    <div class="stat-metric-val">{{ stats.total_investigations }}</div>
+    <div class="stat-metric-sub">Recorded in local SQLite archive</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Single Inspections</div>
+    <div class="stat-metric-val">{{ stats.single_inspections }}</div>
+    <div class="stat-metric-sub">ExifTool tag extractions</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Two-File Comparisons</div>
+    <div class="stat-metric-val">{{ stats.two_file_comparisons }}</div>
+    <div class="stat-metric-sub">Differential tampering analyses</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Chain of Custody Events</div>
+    <div class="stat-metric-val">{{ stats.total_audit_events }}</div>
+    <div class="stat-metric-sub">Logged application actions</div>
+  </div>
+</div>
+
+<!-- Single Image Analysis Card (Standalone Forensic Investigation) -->
+<div class="card" style="border-left: 4px solid var(--blue-primary);">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Single Image Analysis</div>
+      <div class="card-subtitle">Analyze one image for metadata inconsistencies and possible signs of manipulation without requiring an original copy.</div>
+    </div>
+    <span class="badge badge-info">Standalone Investigation</span>
+  </div>
+
+  <form action="{{ url_for('single_analysis') }}" method="POST" enctype="multipart/form-data" id="dashboard-single-form" onsubmit="return handleDashFormSubmit(event)">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; align-items: start;">
+      <div>
+        <div class="dropzone" id="dash-dropzone" style="padding: 24px 16px;">
+          <div class="dropzone-icon-box" style="width: 36px; height: 36px; font-size: 11px;">IMG</div>
+          <div class="dropzone-text" style="font-size: 14px;">Select or drop an evidence image here</div>
+          <div class="dropzone-sub" style="font-size: 12px;">Supported: JPEG, PNG, TIFF, WebP, HEIC (Max 50 MB)</div>
+          <input type="file" name="evidence_file" id="dash-file-input" accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.heic,.heif" required onchange="handleDashFileSelect(this)">
+        </div>
+
+        <div id="dash-file-details" style="display: none; margin-top: 12px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: var(--text-secondary);">Selected File:</span>
+            <strong id="dash-filename" style="color: var(--navy-primary);">-</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: var(--text-secondary);">File Size:</span>
+            <span id="dash-filesize">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);">Detected Format:</span>
+            <span id="dash-fileformat" class="badge badge-info">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" for="dash_case_title" style="font-size: 13px;">Case Title / Identifier</label>
+          <input type="text" id="dash_case_title" name="case_title" class="form-control" placeholder="e.g. Case #2026-SINGLE-01">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" for="dash_source_context" style="font-size: 13px;">Image Source Context</label>
+          <select id="dash_source_context" name="source_context" class="form-control" style="font-size: 13px;">
+            <option value="Source unknown" selected>Source unknown</option>
+            <option value="Captured using a camera or phone">Captured using a camera or phone</option>
+            <option value="Downloaded from a website or social media platform">Downloaded from a website or social media platform (e.g. Pinterest, Instagram, X)</option>
+            <option value="Received through a messaging application">Received through a messaging application (e.g. WhatsApp, Telegram)</option>
+          </select>
+          <div class="form-helper" style="font-size: 11px;">Aids in evaluating whether missing EXIF/GPS is expected or suspicious.</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" for="dash_notes" style="font-size: 13px;">Investigator Notes (Optional)</label>
+          <input type="text" id="dash_notes" name="notes" class="form-control" placeholder="e.g. Received via secure submission">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="dash-analyze-btn">
+          Analyze Image
+        </button>
+
+        <div id="dash-progress-box" style="display: none; margin-top: 14px; text-align: center;">
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
+            <span id="dash-progress-label">Extracting ExifTool metadata &amp; evaluating checks...</span>
+            <span id="dash-progress-pct">0%</span>
+          </div>
+          <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+            <div id="dash-progress-bar" style="width: 0%; height: 100%; background: var(--blue-primary); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Quick Forensic Actions</div>
+      <div class="card-subtitle">Launch standard forensic workflows</div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="{{ url_for('single_analysis') }}" class="btn btn-primary">
+      Single Image Analysis
+    </a>
+    <a href="{{ url_for('compare') }}" class="btn btn-navy">
+      Compare Two Files
+    </a>
+    <a href="{{ url_for('verify') }}" class="btn btn-secondary">
+      Verify File Hashes
+    </a>
+    <a href="{{ url_for('inspect') }}" class="btn btn-secondary">
+      Metadata Inspector
+    </a>
+  </div>
+</div>
+
+<!-- Recent Investigations -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Recent Forensic Investigations</div>
+      <div class="card-subtitle">Local database case history</div>
+    </div>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm">View Full History</a>
+  </div>
+
+  {% if investigations %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Case ID</th>
+          <th>Case Title</th>
+          <th>Analysis Type</th>
+          <th>Analysis Date</th>
+          <th>Primary File</th>
+          <th>SHA-256 Digest</th>
+          <th>Anomalies</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in investigations[:5] %}
+        <tr>
+          <td><code class="code-pill">{{ inv.id }}</code></td>
+          <td><strong>{{ inv.case_title }}</strong></td>
+          <td>
+            <span class="badge {% if inv.analysis_type == 'compare' %}badge-warning{% else %}badge-info{% endif %}">
+              {{ inv.analysis_type }}
+            </span>
+          </td>
+          <td style="color: var(--text-secondary);">{{ inv.created_at }}</td>
+          <td>{{ inv.file_a_name or 'N/A' }}</td>
+          <td><code>{{ (inv.file_a_hash or '')[:16] }}...</code></td>
+          <td>
+            {% if inv.anomaly_count > 0 %}
+            <span class="badge badge-danger">{{ inv.anomaly_count }} Flag(s)</span>
+            {% else %}
+            <span class="badge badge-success">Clean</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('view_report', inv_id=inv.id) }}" class="btn btn-secondary btn-sm" target="_blank">
+              Printable Report
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+    <p style="font-weight: 600; color: var(--navy-primary); margin-bottom: 4px;">No investigations recorded yet</p>
+    <p style="font-size: 13px;">Click <strong>Inspect Single File</strong> or <strong>Compare Two Files</strong> above to begin your first investigation.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Chain of Custody Audit Log Preview -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Chain of Custody Event Log</div>
+      <div class="card-subtitle">Real-time local application audit log</div>
+    </div>
+  </div>
+
+  {% if audit_logs %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 20%;">Timestamp</th>
+          <th style="width: 25%;">Event Type</th>
+          <th style="width: 55%;">Event Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in audit_logs[:6] %}
+        <tr>
+          <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px;">{{ log.timestamp }}</td>
+          <td><span class="badge badge-info">{{ log.event_type }}</span></td>
+          <td>{{ log.details }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No audit events recorded.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function handleDashFileSelect(input) {
+    if (input.files && input.files[0]) {
+      var file = input.files[0];
+      var detailsBox = document.getElementById("dash-file-details");
+      var filenameEl = document.getElementById("dash-filename");
+      var filesizeEl = document.getElementById("dash-filesize");
+      var fileformatEl = document.getElementById("dash-fileformat");
+
+      filenameEl.textContent = file.name;
+      
+      var sizeStr = "";
+      if (file.size > 1024 * 1024) {
+        sizeStr = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+      } else {
+        sizeStr = (file.size / 1024).toFixed(1) + " KB";
+      }
+      filesizeEl.textContent = sizeStr;
+
+      var ext = file.name.split('.').pop().toUpperCase();
+      fileformatEl.textContent = ext;
+
+      detailsBox.style.display = "block";
+    }
+  }
+
+  function handleDashFormSubmit(e) {
+    var input = document.getElementById("dash-file-input");
+    if (!input.files || input.files.length === 0) {
+      alert("Please select or drop an evidence image first.");
+      return false;
+    }
+
+    var btn = document.getElementById("dash-analyze-btn");
+    var progressBox = document.getElementById("dash-progress-box");
+    var progressBar = document.getElementById("dash-progress-bar");
+    var progressPct = document.getElementById("dash-progress-pct");
+    var progressLabel = document.getElementById("dash-progress-label");
+
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.75";
+    btn.textContent = "Analyzing Image (ExifTool Running)...";
+    progressBox.style.display = "block";
+
+    var stages = [
+      { pct: 20, text: "Computing SHA-256 binary hash..." },
+      { pct: 45, text: "Executing ExifTool read-only extraction..." },
+      { pct: 70, text: "Evaluating chronological & software rules..." },
+      { pct: 90, text: "Inspecting compression & synthesizing report..." },
+      { pct: 98, text: "Finalizing forensic authenticity analysis..." }
+    ];
+
+    var idx = 0;
+    setInterval(function() {
+      if (idx < stages.length) {
+        progressBar.style.width = stages[idx].pct + "%";
+        progressPct.textContent = stages[idx].pct + "%";
+        progressLabel.textContent = stages[idx].text;
+        idx++;
+      }
+    }, 350);
+
+    return true;
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Recently Viewed Records{% endblock %}
+{% block page_title %}Recently Viewed{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div class="card-title">Recently Accessed Investigations & Reports</div>
+      <div class="card-subtitle">Quick resume list for files and reports examined during recent sessions</div>
+    </div>
+    {% if items %}
+    <form action="{{ url_for('clear_recently_viewed_route') }}" method="POST" style="display: inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Clear recent access records?');">
+        Clear History
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if items %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Target File</th>
+          <th>Investigation Type</th>
+          <th>Classification</th>
+          <th>Accessed At</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            <strong style="color: var(--navy-primary);">{{ item.file_name or 'Forensic Case' }}</strong>
+            {% if item.investigation_id %}
+            <div style="font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 2px;">
+              ID: {{ item.investigation_id }}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge {% if item.item_type == 'single' %}badge-info{% elif item.item_type == 'compare' %}badge-warning{% else %}badge-secondary{% endif %}" style="text-transform: uppercase; font-size: 11px;">
+              {{ item.item_type }}
+            </span>
+          </td>
+          <td>
+            {% if 'Suspicious' in (item.classification or '') %}
+            <span class="badge badge-danger">Suspicious</span>
+            {% elif 'No Significant' in (item.classification or '') %}
+            <span class="badge badge-success">No Significant Indicators</span>
+            {% elif 'Inconclusive' in (item.classification or '') %}
+            <span class="badge badge-warning">Inconclusive</span>
+            {% else %}
+            <span class="badge badge-secondary">{{ item.classification or 'N/A' }}</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--text-secondary); font-size: 12px; font-family: var(--font-mono);">
+            {{ item.viewed_at }}
+          </td>
+          <td>
+            {% if item.investigation_id %}
+            <a href="{{ url_for('view_report', inv_id=item.investigation_id) }}" class="btn btn-secondary btn-sm" target="_blank">
+              Open Report
+            </a>
+            {% else %}
+            <a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm">
+              View History
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 48px 24px; color: var(--text-secondary);">
+    <div style="font-weight: 600; font-size: 16px; color: var(--navy-primary); margin-bottom: 6px;">No Recent Records</div>
+    <p style="font-size: 13px; max-width: 420px; margin: 0 auto 16px auto;">Files and investigations you open will be automatically logged here for fast access.</p>
+    <a href="{{ url_for('single_analysis') }}" class="btn btn-primary btn-sm">Start Single Image Analysis</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

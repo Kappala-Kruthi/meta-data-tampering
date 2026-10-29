@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Forensics Workspace{% endblock %} - TRACE Workbench</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body data-theme="{{ user_prefs.theme if user_prefs else 'light' }}" data-density="{{ user_prefs.density if user_prefs else 'comfortable' }}" data-sidebar="{{ user_prefs.sidebar_state if user_prefs else 'expanded' }}" style="--accent-color: {{ user_prefs.accent_color if user_prefs else '#2563EB' }};">
+
+  <div class="app-layout">
+    <!-- Authenticated Sidebar -->
+    <aside class="app-sidebar">
+      <a href="{{ url_for('dashboard') }}" class="app-sidebar-brand" style="gap: 12px; height: 68px;">
+        <span class="trace-nav-icon">
+          <svg width="28" height="28" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 8 15 V 10 C 8 8.9 8.9 8 10 8 H 15" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 27 8 H 32 C 33.1 8 34 8.9 34 10 V 15" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 8 27 V 32 C 8 33.1 8.9 34 10 34 H 15" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 27 34 H 32 C 33.1 34 34 33.1 34 32 V 27" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="20" r="4.2" stroke="#00C2FF" stroke-width="2.6" fill="none"/>
+            <path d="M 23.2 23.2 L 26.5 26.5" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="trace-brand-titles">
+          <span class="trace-brand-name">TRACE</span>
+          <span class="trace-brand-sub">FORENSICS WORKBENCH</span>
+        </div>
+      </a>
+
+      <!-- Grouped Navigation Menu -->
+      <div class="sidebar-scroll-container" style="overflow-y: auto; flex: 1; padding-bottom: 16px;">
+        
+        <!-- Section: Forensic Tools -->
+        <div class="sidebar-nav-heading">CORE FORENSICS</div>
+        <ul class="app-nav-menu">
+          <li>
+            <a href="{{ url_for('dashboard') }}" class="app-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+              <span class="nav-text">Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('single_analysis') }}" class="app-nav-link {% if request.endpoint == 'single_analysis' %}active{% endif %}">
+              <span class="nav-text">Single Image Analysis</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('batch_analysis_route') }}" class="app-nav-link {% if request.endpoint == 'batch_analysis_route' %}active{% endif %}">
+              <span class="nav-text">Batch Image Triage</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('compare') }}" class="app-nav-link {% if request.endpoint == 'compare' %}active{% endif %}">
+              <span class="nav-text">Compare Files</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('inspect') }}" class="app-nav-link {% if request.endpoint == 'inspect' %}active{% endif %}">
+              <span class="nav-text">Metadata Inspector</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('hex_inspector_route') }}" class="app-nav-link {% if request.endpoint == 'hex_inspector_route' %}active{% endif %}">
+              <span class="nav-text">Hex & Binary Inspector</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('sanitizer_route') }}" class="app-nav-link {% if request.endpoint == 'sanitizer_route' %}active{% endif %}">
+              <span class="nav-text">Metadata Sanitizer</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('verify') }}" class="app-nav-link {% if request.endpoint == 'verify' %}active{% endif %}">
+              <span class="nav-text">Hash Verification</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('history') }}" class="app-nav-link {% if request.endpoint == 'history' %}active{% endif %}">
+              <span class="nav-text">Case History Archive</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Section: Personal Workspace -->
+        <div class="sidebar-nav-heading">PERSONAL WORKSPACE</div>
+        <ul class="app-nav-menu">
+          <li>
+            <a href="{{ url_for('profile') }}" class="app-nav-link {% if request.endpoint == 'profile' %}active{% endif %}">
+              <span class="nav-text">Investigator Profile</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('notifications') }}" class="app-nav-link {% if request.endpoint in ['notifications', 'mark_notification_read', 'delete_notification_route'] %}active{% endif %}" style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="nav-text">Notifications</span>
+              {% if unread_notifications_count and unread_notifications_count > 0 %}
+              <span class="nav-badge">{{ unread_notifications_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('favorites') }}" class="app-nav-link {% if request.endpoint == 'favorites' %}active{% endif %}">
+              <span class="nav-text">Saved Items & Favorites</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('activity') }}" class="app-nav-link {% if request.endpoint == 'activity' %}active{% endif %}">
+              <span class="nav-text">Activity & Milestones</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('recently_viewed') }}" class="app-nav-link {% if request.endpoint == 'recently_viewed' %}active{% endif %}">
+              <span class="nav-text">Recently Viewed</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Section: Settings & Support -->
+        <div class="sidebar-nav-heading">SETTINGS & SUPPORT</div>
+        <ul class="app-nav-menu">
+          <li>
+            <a href="{{ url_for('appearance') }}" class="app-nav-link {% if request.endpoint == 'appearance' %}active{% endif %}">
+              <span class="nav-text">Appearance Center</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('security') }}" class="app-nav-link {% if request.endpoint == 'security' %}active{% endif %}">
+              <span class="nav-text">Security Center</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('help_center') }}" class="app-nav-link {% if request.endpoint == 'help_center' %}active{% endif %}">
+              <span class="nav-text">Help Center & FAQs</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('shortcuts') }}" class="app-nav-link {% if request.endpoint == 'shortcuts' %}active{% endif %}">
+              <span class="nav-text">Keyboard Shortcuts</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('feedback') }}" class="app-nav-link {% if request.endpoint == 'feedback' %}active{% endif %}">
+              <span class="nav-text">Feedback & Bug Report</span>
+            </a>
+          </li>
+        </ul>
+
+
+      </div>
+
+      <div class="app-sidebar-footer">
+        <div>Engine Status:</div>
+        <div style="color: #cbd5e1; font-weight: 500; margin-top: 4px;">
+          ExifTool v{{ exiftool_ver }} Active
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="app-main-wrapper">
+      <header class="app-topbar">
+        <div class="app-topbar-title">
+          {% block page_title %}Forensic Workspace{% endblock %}
+        </div>
+
+        <div class="app-user-menu" style="display: flex; align-items: center; gap: 14px;">
+          <!-- Notification Bell with Count Badge -->
+          <a href="{{ url_for('notifications') }}" class="topbar-icon-link" title="Notifications" style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #f1f5f9; color: var(--navy-primary);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            {% if unread_notifications_count and unread_notifications_count > 0 %}
+            <span style="position: absolute; top: -2px; right: -2px; background: #b91c1c; color: #ffffff; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 5px; min-width: 16px; text-align: center; border: 2px solid #ffffff;">
+              {{ unread_notifications_count }}
+            </span>
+            {% endif %}
+          </a>
+
+          <!-- Quick Theme Indicator / Toggle -->
+          <a href="{{ url_for('appearance') }}" class="topbar-icon-link" title="Appearance Settings" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #f1f5f9; color: var(--navy-primary);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </a>
+
+          <!-- User Profile Avatar -->
+          <a href="{{ url_for('profile') }}" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--navy-primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; border: 2px solid var(--blue-primary);">
+              {{ user_profile.avatar_initials if user_profile else 'BK' }}
+            </div>
+            <span class="user-tag" style="display: flex; flex-direction: column; line-height: 1.2;">
+              <strong class="user-name" style="font-size: 13px;">{{ user_profile.display_name if user_profile else session.get('user_id', 'Bhuvana@123') }}</strong>
+              <small style="color: var(--text-secondary); font-size: 11px;">{{ session.get('user_id', 'Bhuvana@123') }}</small>
+            </span>
+          </a>
+
+          <!-- Sign Out -->
+          <form action="{{ url_for('logout') }}" method="POST" style="display: inline; margin-left: 6px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-sm" style="padding: 6px 12px; font-size: 12px;">Sign Out</button>
+          </form>
+        </div>
+      </header>
+
+      <main class="app-content">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

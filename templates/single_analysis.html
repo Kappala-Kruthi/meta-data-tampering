@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+
+{% block title %}Single Image Analysis{% endblock %}
+{% block page_title %}Single Image Metadata Authenticity Analysis{% endblock %}
+
+{% block content %}
+<!-- Upload & Configuration Card -->
+<div class="card" style="border-left: 4px solid var(--blue-primary);">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Single Image Analysis</div>
+      <div class="card-subtitle">
+        Analyze one image for metadata inconsistencies and possible signs of manipulation without requiring an original copy.
+      </div>
+    </div>
+    <span class="badge badge-info">Standalone Investigation</span>
+  </div>
+
+  <form action="{{ url_for('single_analysis') }}" method="POST" enctype="multipart/form-data" id="single-analysis-form" onsubmit="return handleSingleFormSubmit(event)">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="dropzone" id="single-dropzone">
+      <div class="dropzone-icon-box">IMG</div>
+      <div class="dropzone-text">Click or drag and drop an evidence image here</div>
+      <div class="dropzone-sub">
+        Supported formats: JPEG, PNG, TIFF, WebP, HEIC/HEIF. Maximum size: 50 MB. Read-only ExifTool execution.
+      </div>
+      <input
+        type="file"
+        name="evidence_file"
+        id="single-file-input"
+        accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.heic,.heif"
+        required
+        onchange="handleSingleFileSelect(this)"
+      >
+    </div>
+
+    <!-- Selected File Details Bar -->
+    <div id="single-file-details" style="display: none; margin-top: 16px; background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <span style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Evidence File</span>
+          <div id="detail-filename" style="font-weight: 700; color: var(--navy-primary); font-size: 15px;">-</div>
+        </div>
+        <div>
+          <span style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">File Size</span>
+          <div id="detail-filesize" style="font-weight: 600; color: var(--text-primary); font-size: 14px;">-</div>
+        </div>
+        <div>
+          <span style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Declared Type</span>
+          <div><span id="detail-fileformat" class="badge badge-info">-</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px;">
+      <div class="form-group">
+        <label class="form-label" for="case_title">Case Reference or Title (Optional)</label>
+        <input
+          type="text"
+          id="case_title"
+          name="case_title"
+          class="form-control"
+          placeholder="e.g. Case #2026-AUT-001"
+          value="{{ case_title or '' }}"
+        >
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="source_context">Image Source Context</label>
+        <select id="source_context" name="source_context" class="form-control">
+          <option value="Source unknown" {% if source_context == 'Source unknown' %}selected{% endif %}>Source unknown</option>
+          <option value="Captured using a camera or phone" {% if source_context == 'Captured using a camera or phone' %}selected{% endif %}>Captured using a camera or phone</option>
+          <option value="Downloaded from a website or social media platform" {% if source_context == 'Downloaded from a website or social media platform' %}selected{% endif %}>Downloaded from a website or social media platform (e.g. Pinterest, Instagram, X)</option>
+          <option value="Received through a messaging application" {% if source_context == 'Received through a messaging application' %}selected{% endif %}>Received through a messaging application (e.g. WhatsApp, Telegram)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="notes">Investigator Notes (Optional)</label>
+        <input
+          type="text"
+          id="notes"
+          name="notes"
+          class="form-control"
+          placeholder="e.g. Uploaded for authenticity and timestamp evaluation"
+          value="{{ notes or '' }}"
+        >
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
+      <div style="font-size: 12px; color: var(--text-secondary);">
+        Cryptographic SHA-256 digest is calculated immediately from binary stream prior to parsing.
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg" id="single-submit-btn">
+        Analyze Image
+      </button>
+    </div>
+
+    <!-- Analysis Progress Bar -->
+    <div id="single-progress-box" style="display: none; margin-top: 18px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span id="single-progress-label" style="font-size: 13px; font-weight: 600; color: var(--navy-primary);">
+          Initializing forensic checks...
+        </span>
+        <span id="single-progress-pct" style="font-size: 13px; font-weight: 700; color: var(--blue-primary);">0%</span>
+      </div>
+      <div style="width: 100%; height: 8px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden;">
+        <div id="single-progress-bar" style="width: 0%; height: 100%; background-color: var(--blue-primary); transition: width 0.3s ease;"></div>
+      </div>
+    </div>
+  </form>
+</div>
+
+{% if result %}
+<!-- 1. Forensic Authenticity Classification Banner -->
+<div class="card" style="border-top: 4px solid {% if analysis.classification == 'SUSPICIOUS_INDICATORS_FOUND' %}#f59e0b{% elif analysis.classification == 'NO_SIGNIFICANT_INDICATORS' %}#10b981{% else %}#64748b{% endif %};">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 4px;">
+        Forensic Result Classification (Standalone Single-File Evaluation)
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <h2 style="margin: 0; font-size: 24px; color: var(--navy-primary);">
+          {{ analysis.classification_title }}
+        </h2>
+        <span class="badge {{ analysis.classification_badge }}" style="font-size: 13px; padding: 4px 10px;">
+          {{ analysis.findings_count }} Findings
+        </span>
+      </div>
+      <p style="margin: 0; font-size: 14px; max-width: 800px; color: var(--text-primary);">
+        {{ analysis.classification_description }}
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="{{ url_for('single_analysis_report', inv_id=inv_id) }}" class="btn btn-navy btn-sm" target="_blank">
+        Print Evidence Report
+      </a>
+      <a href="{{ url_for('custody_certificate_route', inv_id=inv_id) }}" class="btn btn-secondary btn-sm" target="_blank">
+        Custody Certificate
+      </a>
+      <a href="{{ url_for('export_json_route', inv_id=inv_id) }}" class="btn btn-secondary btn-sm">
+        Export JSON
+      </a>
+    </div>
+  </div>
+
+  <!-- Mandatory Forensic Uncertainty Disclosure -->
+  <div style="margin-top: 16px; background-color: #f8fafc; border-left: 4px solid #64748b; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 12px; color: #334155; line-height: 1.6;">
+    <strong>Forensic Transparency &amp; Uncertainty Notice:</strong>
+    Without an original reference image or verified capture hash, automated analysis cannot determine historical authenticity.
+    The absence of suspicious indicators does NOT prove an image is unaltered, as metadata can be easily stripped.
+    Conversely, software tags and timestamp differences can arise from normal, non-malicious image management.
+  </div>
+</div>
+
+<!-- 2. Cryptographic Integrity & File Details -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Cryptographic Evidence Fingerprint</div>
+      <div class="card-subtitle">Computed directly from the uploaded byte stream</div>
+    </div>
+    <span class="badge badge-info">Case Ref: {{ inv_id }}</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+    <!-- SHA-256 Fingerprint -->
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">SHA-256 Digest</span>
+        <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" onclick="copyHashToClipboard('{{ result.sha256 }}', this)">
+          Copy Hash
+        </button>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 12px; word-break: break-all; color: var(--navy-primary); background: #ffffff; padding: 8px 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
+        {{ result.sha256 }}
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">
+        Identifies the exact binary bytes analyzed. Essential for evidence preservation.
+      </div>
+    </div>
+
+    <!-- File Specifications -->
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+        File Properties
+      </div>
+      <table style="width: 100%; font-size: 13px;">
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Filename:</td>
+          <td><strong>{{ result.file_name }}</strong></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">File Size:</td>
+          <td>{{ result.file_size_human }} ({{ result.file_size }} bytes)</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Detected Format:</td>
+          <td><span class="badge badge-info">{{ result.detected_format }}</span> (MIME: {{ result.metadata.summary.mime_type or 'N/A' }})</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Dimensions:</td>
+          <td>{{ result.metadata.summary.image_width or 'N/A' }} &times; {{ result.metadata.summary.image_height or 'N/A' }} px</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Source Context:</td>
+          <td><span class="badge badge-neutral" style="font-weight: 600;">{{ result.source_context or 'Source unknown' }}</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- GPS Geolocation & Coordinate Provenance Card -->
+{% if analysis.gps_forensics and analysis.gps_forensics.has_gps %}
+<div class="card">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div class="card-title">GPS Geolocation &amp; Spatial Provenance</div>
+      <div class="card-subtitle">Embedded GNSS satellite telemetry and terrestrial coordinates mapped from EXIF tags</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ analysis.gps_forensics.osm_external_url }}" target="_blank" class="btn btn-secondary btn-sm">OpenStreetMap</a>
+      <a href="{{ analysis.gps_forensics.google_maps_url }}" target="_blank" class="btn btn-secondary btn-sm">Google Maps</a>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;">
+    <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px;">Resolved Coordinates</div>
+      <div style="font-size: 16px; font-weight: 700; color: var(--navy-primary); margin-bottom: 12px;">
+        {{ analysis.gps_forensics.formatted_coordinates }}
+      </div>
+
+      <table style="width: 100%; font-size: 12px; margin-bottom: 12px;">
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Latitude:</td>
+          <td><code>{{ analysis.gps_forensics.latitude }}</code></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Longitude:</td>
+          <td><code>{{ analysis.gps_forensics.longitude }}</code></td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Altitude:</td>
+          <td>{{ analysis.gps_forensics.altitude or 'Not Specified' }}</td>
+        </tr>
+        {% if analysis.gps_forensics.timestamp_consistency %}
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Satellite Clock:</td>
+          <td>{{ analysis.gps_forensics.timestamp_consistency.gps_datetime_utc }}</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-secondary); padding: 3px 0;">Clock Delta:</td>
+          <td>{{ analysis.gps_forensics.timestamp_consistency.absolute_difference_hours }} hours</td>
+        </tr>
+        {% endif %}
+      </table>
+
+      {% for g_f in analysis.gps_forensics.findings %}
+      <div style="margin-top: 8px; font-size: 11px; padding: 8px; border-radius: 4px; background: {% if g_f.status == 'VALID' %}#f0fdf4; border: 1px solid #bbf7d0; color: #166534;{% else %}#fef2f2; border: 1px solid #fecaca; color: #991b1b;{% endif %}">
+        <strong>{{ g_f.category }}:</strong> {{ g_f.description }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Embedded OpenStreetMap Preview -->
+    <div style="height: 280px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color); background: #e2e8f0;">
+      <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="{{ analysis.gps_forensics.osm_embed_url }}"></iframe>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- 3. Explainable Forensic Findings -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Forensic Anomaly Findings</div>
+      <div class="card-subtitle">
+        Documented rules with supporting evidence, severity rationales, and recommended next steps
+      </div>
+    </div>
+    <span class="badge {% if analysis.findings_count > 0 %}badge-warning{% else %}badge-success{% endif %}">
+      {{ analysis.findings_count }} Observed
+    </span>
+  </div>
+
+  {% if analysis.findings %}
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    {% for f in analysis.findings %}
+    <div style="background-color: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm); border-left: 4px solid {% if f.severity == 'HIGH' %}#b91c1c{% elif f.severity == 'MEDIUM' %}#b45309{% else %}#2563eb{% endif %};">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+        <div>
+          <span class="badge {% if f.severity == 'HIGH' %}badge-danger{% elif f.severity == 'MEDIUM' %}badge-warning{% else %}badge-info{% endif %}" style="margin-right: 8px;">
+            {{ f.severity }}
+          </span>
+          <strong style="font-size: 16px; color: var(--navy-primary);">{{ f.rule_name }}</strong>
+          <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); margin-left: 6px;">({{ f.rule_id }})</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">
+          <strong>Severity Rationale:</strong> {{ f.severity_reason }}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; font-size: 13px; margin-top: 10px;">
+        <div style="background-color: #f8fafc; padding: 12px; border-radius: var(--radius-sm); border: 1px solid #e2e8f0;">
+          <div style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Observed Evidence &amp; Field</div>
+          <code style="display: block; margin-bottom: 6px; font-size: 12px; color: #0f172a;">{{ f.evidence_field }}</code>
+          <div style="color: var(--text-primary); font-weight: 500;">{{ f.observed_value }}</div>
+          <div style="margin-top: 8px; color: var(--text-secondary); line-height: 1.5;">
+            <strong>Forensic Explanation:</strong> {{ f.explanation }}
+          </div>
+        </div>
+
+        <div style="background-color: #f8fafc; padding: 12px; border-radius: var(--radius-sm); border: 1px solid #e2e8f0;">
+          <div style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Alternative Benign Explanation</div>
+          <div style="color: var(--text-primary); margin-bottom: 8px; line-height: 1.5;">
+            {{ f.benign_explanation }}
+          </div>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;">
+            <strong style="color: var(--navy-primary); font-size: 12px;">Recommended Next Step:</strong>
+            <div style="color: var(--navy-primary); font-weight: 500; margin-top: 2px;">{{ f.next_step }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 32px 20px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); color: #166534;">
+    <strong style="font-size: 15px; display: block; margin-bottom: 6px;">No Suspicious Indicators Detected</strong>
+    <p style="font-size: 13px; margin: 0; max-width: 650px; margin: 0 auto; color: #15803d;">
+      The active forensic heuristic checks did not identify timestamp inversions, editing suite tags, or metadata structural conflicts.
+      Reminder: This condition does not establish historical authenticity, as metadata may be stripped or constructed.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 4. Checks Performed Matrix -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Checks Performed Matrix</div>
+      <div class="card-subtitle">Complete inventory of forensic rules evaluated against this file</div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Check Name &amp; ID</th>
+          <th style="width: 15%;">Evaluation Status</th>
+          <th style="width: 30%;">Fields Evaluated</th>
+          <th style="width: 30%;">Investigative Observations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for chk in analysis.checks_performed %}
+        <tr>
+          <td>
+            <strong>{{ chk.name }}</strong><br>
+            <code style="font-size: 11px;">{{ chk.check_id }}</code>
+          </td>
+          <td>
+            {% if chk.status == 'PASS' %}
+            <span class="badge badge-success">Clean (Pass)</span>
+            {% elif chk.status == 'FLAGGED' %}
+            <span class="badge badge-warning">Flagged</span>
+            {% else %}
+            <span class="badge badge-neutral">{{ chk.status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <small style="color: var(--text-secondary);">
+              {% if chk.fields_evaluated is iterable and chk.fields_evaluated is not string %}
+                {{ chk.fields_evaluated | join(', ') }}
+              {% else %}
+                {{ chk.fields_evaluated }}
+              {% endif %}
+            </small>
+          </td>
+          <td style="font-size: 13px; color: var(--text-primary);">
+            {{ chk.notes }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 5. Metadata Completeness & Category Audit -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Metadata Completeness Audit</div>
+      <div class="card-subtitle">Assessment of present vs stripped metadata groups</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; text-align: center;">
+    <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">Total Extracted Tags</div>
+      <div style="font-size: 24px; font-weight: 700; color: var(--navy-primary); margin: 6px 0;">{{ analysis.tag_count }}</div>
+      <div style="font-size: 11px; color: var(--text-secondary);">ExifTool tags</div>
+    </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">EXIF Namespace</div>
+      <div style="margin: 8px 0;">
+        <span class="badge {% if analysis.completeness.has_exif %}badge-success{% else %}badge-neutral{% endif %}">
+          {{ analysis.completeness.exif_status }}
+        </span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary);">Core camera EXIF</div>
+    </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">Camera Details</div>
+      <div style="margin: 8px 0;">
+        <span class="badge {% if analysis.completeness.has_camera %}badge-success{% else %}badge-neutral{% endif %}">
+          {{ analysis.completeness.camera_hardware }}
+        </span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary);">Make &amp; Model</div>
+    </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">XMP Namespace</div>
+      <div style="margin: 8px 0;">
+        <span class="badge {% if analysis.completeness.has_xmp %}badge-info{% else %}badge-neutral{% endif %}">
+          {{ analysis.completeness.xmp_status }}
+        </span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary);">Extensible packets</div>
+    </div>
+
+    <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">GPS Geotags</div>
+      <div style="margin: 8px 0;">
+        <span class="badge {% if analysis.completeness.has_gps %}badge-info{% else %}badge-neutral{% endif %}">
+          {{ analysis.completeness.gps_status }}
+        </span>
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary);">Position coordinates</div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Advanced Image-Level Compression & Structure Analysis -->
+{% if analysis.advanced_analysis and analysis.advanced_analysis.enabled %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Image-Level Compression &amp; Structure Analysis</div>
+      <div class="card-subtitle">Pillow-powered inspection of discrete DCT quantization tables and compression uniformity</div>
+    </div>
+    <span class="badge badge-info">Advanced Heuristic</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    {% for obs in analysis.advanced_analysis.observations %}
+    <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+      <div style="font-weight: 700; color: var(--navy-primary); font-size: 14px; margin-bottom: 6px;">
+        {{ obs.technique }}
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; font-size: 13px;">
+        <div>
+          <span style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700;">Observed Condition:</span>
+          <div style="color: var(--navy-primary); font-weight: 500; margin-top: 2px;">{{ obs.observed }}</div>
+        </div>
+        <div>
+          <span style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700;">Forensic Relevance:</span>
+          <div style="color: var(--text-primary); margin-top: 2px;">{{ obs.relevance }}</div>
+        </div>
+        <div>
+          <span style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700;">Benign Explanations:</span>
+          <div style="color: var(--text-secondary); margin-top: 2px;">{{ obs.benign_explanation }}</div>
+        </div>
+        <div>
+          <span style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; font-weight: 700;">Method Limitations:</span>
+          <div style="color: #64748b; margin-top: 2px;">{{ obs.limitations }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- 7. Comprehensive Metadata Tag Explorer -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Comprehensive Extracted Metadata Explorer</div>
+      <div class="card-subtitle">Search across all {{ result.metadata.tag_count }} extracted metadata tags</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 16px;">
+    <input
+      type="text"
+      id="tag-search-input"
+      class="form-control"
+      placeholder="Type to filter metadata tags (e.g. Model, Date, Software, GPS, ISO)..."
+      onkeyup="filterMetadataTags()"
+    >
+  </div>
+
+  <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+    <table class="data-table" id="metadata-tags-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Group</th>
+          <th style="width: 35%;">Tag Name</th>
+          <th style="width: 40%;">Recorded Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group_name, tags in result.metadata.groups.items() %}
+          {% for tag_name, val in tags.items() %}
+          <tr class="tag-row" data-group="{{ group_name | lower }}" data-tag="{{ tag_name | lower }}" data-val="{{ val | string | lower }}">
+            <td><span class="badge badge-neutral">{{ group_name }}</span></td>
+            <td><code>{{ tag_name }}</code></td>
+            <td style="word-break: break-all;">{{ val }}</td>
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function handleSingleFileSelect(input) {
+    if (input.files && input.files[0]) {
+      var file = input.files[0];
+      var detailsBox = document.getElementById("single-file-details");
+      var filenameEl = document.getElementById("detail-filename");
+      var filesizeEl = document.getElementById("detail-filesize");
+      var fileformatEl = document.getElementById("detail-fileformat");
+
+      filenameEl.textContent = file.name;
+
+      var sizeStr = "";
+      if (file.size > 1024 * 1024) {
+        sizeStr = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+      } else {
+        sizeStr = (file.size / 1024).toFixed(1) + " KB";
+      }
+      filesizeEl.textContent = sizeStr;
+
+      var ext = file.name.split('.').pop().toUpperCase();
+      fileformatEl.textContent = ext;
+
+      detailsBox.style.display = "block";
+    }
+  }
+
+  function handleSingleFormSubmit(e) {
+    var input = document.getElementById("single-file-input");
+    if (!input.files || input.files.length === 0) {
+      alert("Please select or drop an evidence image first.");
+      return false;
+    }
+
+    var btn = document.getElementById("single-submit-btn");
+    var progressBox = document.getElementById("single-progress-box");
+    var progressBar = document.getElementById("single-progress-bar");
+    var progressPct = document.getElementById("single-progress-pct");
+    var progressLabel = document.getElementById("single-progress-label");
+
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.75";
+    btn.textContent = "Analyzing Image (ExifTool Running)...";
+    progressBox.style.display = "block";
+
+    var stages = [
+      { pct: 15, text: "Streaming binary SHA-256 fingerprint..." },
+      { pct: 35, text: "Executing ExifTool read-only extraction..." },
+      { pct: 55, text: "Evaluating chronological & software rules..." },
+      { pct: 75, text: "Performing compression & structure analysis..." },
+      { pct: 90, text: "Synthesizing forensic findings..." },
+      { pct: 98, text: "Finalizing authenticity classification..." }
+    ];
+
+    var idx = 0;
+    setInterval(function() {
+      if (idx < stages.length) {
+        progressBar.style.width = stages[idx].pct + "%";
+        progressPct.textContent = stages[idx].pct + "%";
+        progressLabel.textContent = stages[idx].text;
+        idx++;
+      }
+    }, 350);
+
+    return true;
+  }
+
+  function copyHashToClipboard(text, btn) {
+    navigator.clipboard.writeText(text).then(function() {
+      var originalText = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(function() {
+        btn.textContent = originalText;
+      }, 2000);
+    });
+  }
+
+  function filterMetadataTags() {
+    var query = document.getElementById("tag-search-input").value.toLowerCase().trim();
+    var rows = document.querySelectorAll("#metadata-tags-table .tag-row");
+
+    rows.forEach(function(row) {
+      var group = row.getAttribute("data-group") || "";
+      var tag = row.getAttribute("data-tag") || "";
+      var val = row.getAttribute("data-val") || "";
+
+      if (!query || group.indexOf(query) !== -1 || tag.indexOf(query) !== -1 || val.indexOf(query) !== -1) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+  }
+</script>
+{% endblock %}

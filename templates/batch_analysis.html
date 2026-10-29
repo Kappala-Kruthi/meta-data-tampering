@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Multi-Image Batch Triage Matrix{% endblock %}
+{% block page_title %}Batch Image Triage Matrix{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Upload Card -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Multi-File Evidentiary Batch Intake & Triage</div>
+        <div class="card-subtitle">Upload multiple media files to rapidly analyze metadata consistency, software traces, and integrity across an entire evidence batch</div>
+      </div>
+    </div>
+
+    <form action="{{ url_for('batch_analysis_route') }}" method="POST" enctype="multipart/form-data" id="batchForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label" for="batch_files">Select Evidence Files (Up to 15 images)</label>
+        <div class="file-drop-zone" id="batchDropZone" onclick="document.getElementById('batch_files').click()">
+          <div class="drop-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue-primary)" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+              <line x1="7" y1="2" x2="7" y2="22"></line>
+              <line x1="17" y1="2" x2="17" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <line x1="2" y1="7" x2="7" y2="7"></line>
+              <line x1="2" y1="17" x2="7" y2="17"></line>
+              <line x1="17" y1="17" x2="22" y2="17"></line>
+              <line x1="17" y1="7" x2="22" y2="7"></line>
+            </svg>
+          </div>
+          <div class="drop-text">Click or drag & drop multiple media files to intake</div>
+          <div class="drop-hint">Supports JPEG, PNG, TIFF, WebP, GIF</div>
+          <input type="file" id="batch_files" name="batch_files" multiple accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.gif" style="display: none;" onchange="updateBatchFileList(this);">
+          <div id="batchFileNames" style="margin-top: 10px; font-weight: 500; font-size: 13px; color: var(--blue-primary);"></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div class="form-helper">Batch triage performs safe, parallel ExifTool metadata parsing and anomaly rule checks.</div>
+        <button type="submit" class="btn btn-primary" id="batchSubmitBtn">Execute Batch Triage</button>
+      </div>
+    </form>
+  </div>
+
+  {% if batch_results %}
+  <!-- Batch Summary KPI Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Media Ingested</div>
+      <div style="font-size: 26px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;">{{ batch_summary.total }}</div>
+      <span class="badge badge-info" style="margin-top: 6px;">Evidence Batch</span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Suspicious / Flagged</div>
+      <div style="font-size: 26px; font-weight: 700; color: #dc2626; margin-top: 4px;">{{ batch_summary.suspicious }}</div>
+      <span class="badge badge-danger" style="margin-top: 6px;">Requires Audit</span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Consistent Metadata</div>
+      <div style="font-size: 26px; font-weight: 700; color: #16a34a; margin-top: 4px;">{{ batch_summary.consistent }}</div>
+      <span class="badge badge-success" style="margin-top: 6px;">No Active Flags</span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Stripped / Inconclusive</div>
+      <div style="font-size: 26px; font-weight: 700; color: var(--text-secondary); margin-top: 4px;">{{ batch_summary.inconclusive }}</div>
+      <span class="badge badge-neutral" style="margin-top: 6px;">Sparse Metadata</span>
+    </div>
+  </div>
+
+  <!-- Batch Triage Matrix Table -->
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div class="card-title">Evidence Triage Matrix</div>
+        <div class="card-subtitle">Comparative assessment of camera models, capture dates, cryptographic hashes, and tamper classifications</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button onclick="exportBatchTableCSV()" class="btn btn-secondary btn-sm">Export Batch CSV</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table" id="batchTriageTable">
+        <thead>
+          <tr>
+            <th>Evidence Item</th>
+            <th>File Size</th>
+            <th>SHA-256 Digest</th>
+            <th>Hardware Model</th>
+            <th>Capture Timestamp</th>
+            <th>Status Classification</th>
+            <th>Flags</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in batch_results %}
+          <tr>
+            <td>
+              <strong style="color: var(--navy-primary); font-size: 13px;">{{ item.filename }}</strong>
+            </td>
+            <td style="font-size: 12px; color: var(--text-secondary);">{{ item.file_size_human }}</td>
+            <td>
+              <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px;" title="{{ item.sha256 }}">
+                {{ item.sha256[:14] }}...
+              </code>
+            </td>
+            <td>
+              <span style="font-size: 12px; font-weight: 500;">{{ item.camera_model or 'Not Specified' }}</span>
+            </td>
+            <td style="font-size: 12px; color: var(--text-secondary);">
+              {{ item.capture_date or 'N/A' }}
+            </td>
+            <td>
+              <span class="badge {{ item.classification_badge }}">
+                {{ item.classification_title }}
+              </span>
+            </td>
+            <td>
+              {% if item.findings_count > 0 %}
+              <span class="badge badge-danger">{{ item.findings_count }}</span>
+              {% else %}
+              <span class="badge badge-success">0</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="{{ url_for('single_analysis') }}?case_id={{ item.investigation_id }}" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;">Inspect</a>
+                <a href="{{ url_for('custody_certificate_route', inv_id=item.investigation_id) }}" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px;" target="_blank">Custody</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function updateBatchFileList(input) {
+  var count = input.files ? input.files.length : 0;
+  var display = document.getElementById('batchFileNames');
+  if (count === 1) {
+    display.innerText = "1 file selected: " + input.files[0].name;
+  } else if (count > 1) {
+    display.innerText = count + " files selected for batch triage.";
+  } else {
+    display.innerText = "";
+  }
+}
+
+function exportBatchTableCSV() {
+  var table = document.getElementById("batchTriageTable");
+  if (!table) return;
+  var rows = table.querySelectorAll("tr");
+  var csv = [];
+  for (var i = 0; i < rows.length; i++) {
+    var row = [], cols = rows[i].querySelectorAll("td, th");
+    for (var j = 0; j < cols.length - 1; j++) {
+      var text = cols[j].innerText.replace(/"/g, '""').trim();
+      row.push('"' + text + '"');
+    }
+    csv.push(row.join(","));
+  }
+  var csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+  var downloadLink = document.createElement("a");
+  downloadLink.download = "batch_forensic_triage_" + new Date().toISOString().slice(0,10) + ".csv";
+  downloadLink.href = window.URL.createObjectURL(csvFile);
+  downloadLink.style.display = "none";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
+</script>
+{% endblock %}

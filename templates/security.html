@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Security Center & Account Controls{% endblock %}
+{% block page_title %}Security Center{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+  
+  <!-- Left Column: Session Info & Password Management -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- Active Session Information -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Active Forensic Session</div>
+          <div class="card-subtitle">Current cryptographic session and environment state</div>
+        </div>
+        <span class="badge badge-success">Session Active</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <span style="color: var(--text-secondary);">Authenticated User:</span>
+          <strong style="color: var(--navy-primary);">{{ user_id }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <span style="color: var(--text-secondary);">Session Cookie Security:</span>
+          <span class="badge badge-info">HttpOnly, SameSite=Lax</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <span style="color: var(--text-secondary);">Host Server IP:</span>
+          <code style="font-family: var(--font-mono);">127.0.0.1 (Localhost Only)</code>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding-bottom: 4px;">
+          <span style="color: var(--text-secondary);">CSRF Protection:</span>
+          <span class="badge badge-success">Cryptographic Token Enforced</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; pt: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <form action="{{ url_for('logout') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--error);">
+            Terminate Current Session
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Password Change Form -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Update Investigator Password</div>
+          <div class="card-subtitle">Change authentication password stored via PBKDF2:SHA256</div>
+        </div>
+      </div>
+
+      <form action="{{ url_for('security') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="old_password">Current Password</label>
+          <input type="password" id="old_password" name="old_password" class="form-control" required placeholder="Enter current password">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="new_password">New Password</label>
+          <input type="password" id="new_password" name="new_password" class="form-control" required minlength="6" placeholder="Minimum 6 characters">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="confirm_password">Confirm New Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="6" placeholder="Re-enter new password">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          Update Password
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Right Column: Academic Security Notice, Retention, & Audit Events -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- Demo Credentials Guidance & Warning -->
+    <div class="card" style="border-left: 4px solid var(--warning);">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Academic Demo Security Guidance</div>
+          <div class="card-subtitle">Deployment readiness and credentials notice</div>
+        </div>
+        <span class="badge badge-warning">Advisory</span>
+      </div>
+      <p style="font-size: 13px; line-height: 1.5; color: var(--text-primary); margin-bottom: 12px;">
+        The current academic installation is configured with default local demo credentials:
+      </p>
+      <div style="background: #fefce8; border: 1px solid #fef08a; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 12px;">
+        <div><strong>User ID:</strong> <code>Bhuvana@123</code></div>
+        <div style="margin-top: 4px;"><strong>Default Password:</strong> <code>123</code></div>
+      </div>
+      <p style="font-size: 12px; line-height: 1.5; color: var(--text-secondary);">
+        <strong>Important:</strong> These credentials exist solely for local offline evaluation and academic defense demonstrations. For any network deployment, passwords must be replaced with strong passphrases and environment secrets must be configured via <code>.env</code>.
+      </p>
+    </div>
+
+    <!-- Privacy & Evidence Retention Policy -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Evidence Storage & Retention Policy</div>
+          <div class="card-subtitle">Compliance with digital forensics custody principles</div>
+        </div>
+      </div>
+      <ul style="padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+        <li><strong>Local Processing Only:</strong> No media or extracted metadata is ever transmitted to third-party cloud servers or external telemetry endpoints.</li>
+        <li><strong>Temporary Evidence Files:</strong> Uploaded images are stored in a dedicated scratch directory and cleaned automatically to prevent forensic contamination.</li>
+        <li><strong>Read-Only Metadata Extraction:</strong> ExifTool is executed strictly in read-only analysis mode without writing back to source files.</li>
+        <li><strong>Cryptographic Hashes:</strong> SHA-256 digests are computed immediately upon ingestion to establish digital chain of custody.</li>
+      </ul>
+    </div>
+
+    <!-- Security Event History -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Recent Security Events</div>
+          <div class="card-subtitle">Session authentication and access records</div>
+        </div>
+      </div>
+      {% set logs = security_logs or sec_events %}
+      {% if logs %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Event</th>
+              <th>Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for evt in logs[:5] %}
+            <tr>
+              <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 11px;">{{ evt.timestamp }}</td>
+              <td><span class="badge badge-info">{{ evt.event_type }}</span></td>
+              <td style="font-size: 12px;">{{ evt.details }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="font-size: 13px; color: var(--text-secondary); text-align: center; padding: 16px;">No security anomalies recorded.</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

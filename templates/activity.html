@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Investigator Activity & Achievements{% endblock %}
+{% block page_title %}Activity & Milestones{% endblock %}
+
+{% block content %}
+<!-- Verified Milestone Cards -->
+<div class="stat-card-row">
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Single Image Analyses</div>
+    <div class="stat-metric-val">{{ milestones.stats.single_inspections if milestones.stats else 0 }}</div>
+    <div class="stat-metric-sub">Verified standalone extractions</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Two-Image Comparisons</div>
+    <div class="stat-metric-val">{{ milestones.stats.two_file_comparisons if milestones.stats else 0 }}</div>
+    <div class="stat-metric-sub">Differential forensics executed</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Reports Generated</div>
+    <div class="stat-metric-val">{{ milestones.stats.total_investigations if milestones.stats else 0 }}</div>
+    <div class="stat-metric-sub">Forensic dossiers compiled</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Audit Ledger Records</div>
+    <div class="stat-metric-val">{{ milestones.stats.total_audit_events if milestones.stats else 0 }}</div>
+    <div class="stat-metric-sub">Real chronological events</div>
+  </div>
+</div>
+
+<!-- Milestone Badges (Earned through verified system activity) -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Verified Research Milestones</div>
+      <div class="card-subtitle">Milestones achieved through verified local investigation operations ({{ milestones.completed_count or 0 }}/{{ milestones.total_milestones or 5 }} Completed)</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+    {% if milestones.milestones %}
+      {% for m in milestones.milestones %}
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; background-color: {% if m.completed %}#f0fdf4{% else %}#f8fafc{% endif %};">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <strong style="color: var(--navy-primary); font-size: 14px;">{{ m.title }}</strong>
+          {% if m.completed %}
+          <span class="badge badge-success">Achieved</span>
+          {% else %}
+          <span class="badge badge-secondary">{{ m.metric }}</span>
+          {% endif %}
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+          {{ m.description }}
+        </p>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- Chronological Activity Ledger -->
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div class="card-title">Chronological Activity Ledger</div>
+      <div class="card-subtitle">Real-time log of investigator actions, analyses, and downloads</div>
+    </div>
+    {% set activity_records = activity or activities %}
+    {% if activity_records %}
+    <form action="{{ url_for('clear_activity') }}" method="POST" style="display: inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Clear nonessential activity history? Core case records and audit trails remain preserved.');">
+        Clear Activity History
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if activity_records %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 22%;">Timestamp</th>
+          <th style="width: 20%;">Action Type</th>
+          <th style="width: 58%;">Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for act in activity_records %}
+        <tr>
+          <td style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px;">{{ act.timestamp }}</td>
+          <td>
+            <span class="badge {% if 'ANALYSIS' in act.event_type %}badge-info{% elif 'COMPARE' in act.event_type %}badge-warning{% elif 'REPORT' in act.event_type %}badge-success{% else %}badge-secondary{% endif %}">
+              {{ act.event_type }}
+            </span>
+          </td>
+          <td style="font-size: 13px;">{{ act.details }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+    <p style="font-weight: 600; color: var(--navy-primary); margin-bottom: 4px;">No Activity Recorded</p>
+    <p style="font-size: 13px;">Actions taken during forensic sessions will appear in this ledger.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

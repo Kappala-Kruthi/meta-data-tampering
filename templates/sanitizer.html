@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Metadata Sanitizer & Privacy Redactor{% endblock %}
+{% block page_title %}Metadata Sanitizer & Redactor{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Form Card -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Privacy Preserving Metadata Sanitization & Redaction</div>
+        <div class="card-subtitle">Scrub sensitive geolocation coordinates, camera serial numbers, and device fingerprints prior to publication, with cryptographic audit verification</div>
+      </div>
+    </div>
+
+    <form action="{{ url_for('sanitizer_route') }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label" for="sanitizer_file">Select Image to Sanitize</label>
+        <div class="file-drop-zone" onclick="document.getElementById('sanitizer_file').click()">
+          <div class="drop-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue-primary)" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <div class="drop-text">Click or drag & drop media file to sanitize</div>
+          <div class="drop-hint">Supports JPEG, PNG, TIFF, WebP</div>
+          <input type="file" id="sanitizer_file" name="sanitizer_file" required accept=".jpg,.jpeg,.png,.webp,.tif,.tiff" style="display: none;" onchange="document.getElementById('sanitizerFileName').innerText = this.files[0] ? this.files[0].name : '';">
+          <div id="sanitizerFileName" style="margin-top: 10px; font-weight: 600; color: var(--blue-primary);"></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label">Sanitization Scope / Redaction Mode</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <label style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; cursor: pointer; display: flex; gap: 12px; align-items: start; background: #ffffff;">
+            <input type="radio" name="scrub_mode" value="ALL" checked style="margin-top: 3px;">
+            <div>
+              <strong style="color: var(--navy-primary); font-size: 14px; display: block;">Complete Privacy Scrub (All EXIF)</strong>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                Removes all EXIF, GPS, IPTC, XMP, device serial numbers, thumbnails, and maker notes while preserving essential color space tags.
+              </div>
+            </div>
+          </label>
+
+          <label style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; cursor: pointer; display: flex; gap: 12px; align-items: start; background: #ffffff;">
+            <input type="radio" name="scrub_mode" value="GPS_ONLY" style="margin-top: 3px;">
+            <div>
+              <strong style="color: var(--navy-primary); font-size: 14px; display: block;">Selective GPS Geolocation Stripping</strong>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                Removes only latitude, longitude, altitude, and GNSS timestamps, keeping camera shutter, ISO, aperture, and lens data intact.
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary">Sanitize & Generate Differential</button>
+      </div>
+    </form>
+  </div>
+
+  {% if result %}
+  <!-- Verification Metrics -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tags Stripped</div>
+      <div style="font-size: 26px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;">{{ result.removed_count }}</div>
+      <span class="badge badge-success" style="margin-top: 6px;">{{ result.original_tag_count }} &rarr; {{ result.sanitized_tag_count }} tags remaining</span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Byte Reduction</div>
+      <div style="font-size: 26px; font-weight: 700; color: #16a34a; margin-top: 4px;">-{{ result.bytes_reduced }} bytes</div>
+      <span class="badge badge-info" style="margin-top: 6px;">{{ result.percent_reduced }}% overhead reduction</span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Cryptographic Hash Transformation</div>
+      <div style="font-size: 14px; font-weight: 700; color: var(--navy-primary); margin-top: 8px;">Bitstream Modified</div>
+      <span class="badge badge-warning" style="margin-top: 6px;">Tamper-Evident Hash Diverged</span>
+    </div>
+  </div>
+
+  <!-- Differential Hashes Card -->
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div class="card-title">Cryptographic Integrity Comparison</div>
+        <div class="card-subtitle">Verifies bitstream modification between original and sanitized evidence</div>
+      </div>
+      <div>
+        <a href="{{ url_for('download_sanitized_route', filename=result.sanitized_filename) }}" class="btn btn-primary btn-sm">
+          Download Sanitized File
+        </a>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+      <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+        <span style="color: var(--text-secondary); display: block; margin-bottom: 4px;">Original File SHA-256 ({{ result.original_size }} bytes):</span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--navy-primary); word-break: break-all;">
+          {{ result.original_sha256 }}
+        </code>
+      </div>
+
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 12px;">
+        <span style="color: #166534; display: block; margin-bottom: 4px;">Sanitized File SHA-256 ({{ result.sanitized_size }} bytes):</span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #15803d; word-break: break-all;">
+          {{ result.sanitized_sha256 }}
+        </code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Removed Tags Ledger Table -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Stripped & Redacted Metadata Elements</div>
+        <div class="card-subtitle">Complete ledger of metadata fields successfully purged from the sanitized container</div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Tag Identifier</th>
+            <th>Original Value Prior to Redaction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in result.removed_tags %}
+          <tr>
+            <td>
+              <span class="badge {% if t.category == 'GPS Geolocation' %}badge-danger{% elif t.category == 'Camera Hardware' %}badge-warning{% else %}badge-info{% endif %}">
+                {{ t.category }}
+              </span>
+            </td>
+            <td><code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{ t.tag }}</code></td>
+            <td style="font-size: 12px; color: var(--text-secondary); max-width: 400px; word-break: break-word;">
+              {{ t.original_value }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

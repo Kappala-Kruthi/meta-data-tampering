@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Investigation History and Chain of Custody{% endblock %}
+{% block page_title %}Local Investigation History and Chain of Custody{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Saved Forensic Cases</div>
+      <div class="card-subtitle">Local database persistence at <code>data/investigations.db</code></div>
+    </div>
+    {% if investigations %}
+    <form action="{{ url_for('clear_history') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete all saved investigation cases? This action cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger-outline btn-sm">
+        Clear All Cases
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if investigations %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Case ID</th>
+          <th>Case Title</th>
+          <th>Type</th>
+          <th>Timestamp</th>
+          <th>File(s) Analyzed</th>
+          <th>SHA-256 Digest</th>
+          <th>Tampering Flags</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in investigations %}
+        <tr>
+          <td><code class="code-pill">{{ inv.id }}</code></td>
+          <td><strong>{{ inv.case_title }}</strong></td>
+          <td>
+            <span class="badge {% if inv.analysis_type == 'compare' %}badge-warning{% else %}badge-info{% endif %}">
+              {{ inv.analysis_type }}
+            </span>
+          </td>
+          <td style="color: var(--text-secondary); font-size: 12px;">{{ inv.created_at }}</td>
+          <td>
+            {{ inv.file_a_name or 'N/A' }}
+            {% if inv.file_b_name %}
+            <div style="color: var(--navy-primary); font-size: 11px;">vs {{ inv.file_b_name }}</div>
+            {% endif %}
+          </td>
+          <td><code>{{ (inv.file_a_hash or '')[:16] }}...</code></td>
+          <td>
+            {% if inv.anomaly_count > 0 %}
+            <span class="badge badge-danger">{{ inv.anomaly_count }} Indicator(s)</span>
+            {% else %}
+            <span class="badge badge-success">Clean</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <a href="{{ url_for('view_report', inv_id=inv.id) }}" target="_blank" class="btn btn-secondary btn-sm">
+                Report
+              </a>
+              <form action="{{ url_for('delete_case', inv_id=inv.id) }}" method="POST" onsubmit="return confirm('Delete case record {{ inv.id }}?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger-outline btn-sm" style="padding: 4px 8px;">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+    <p style="font-weight: 600; color: var(--navy-primary); margin-bottom: 4px;">No investigation records saved yet</p>
+    <p style="font-size: 13px;">Analyses executed in the Single-File Inspector or Comparison Workspace will appear here.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Chain of Custody Audit Log -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Chain of Custody Event Audit Log</div>
+      <div class="card-subtitle">Automated application-level audit logging of evidence interactions</div>
+    </div>
+  </div>
+
+  {% if audit_logs %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 18%;">Timestamp</th>
+          <th style="width: 22%;">Event Identifier</th>
+          <th style="width: 45%;">Event Description</th>
+          <th style="width: 15%;">Related Case</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in audit_logs %}
+        <tr>
+          <td style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">{{ log.timestamp }}</td>
+          <td><span class="badge badge-info">{{ log.event_type }}</span></td>
+          <td>{{ log.details }}</td>
+          <td>
+            {% if log.investigation_id %}
+            <code class="code-pill">{{ log.investigation_id }}</code>
+            {% else %}
+            <span style="color: var(--text-secondary);">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

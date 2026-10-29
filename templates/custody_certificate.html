@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chain of Custody Certificate - {{ cert.evidence_id }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy-primary: #14243A;
+      --navy-deep: #0B1728;
+      --blue-primary: #2563EB;
+      --border-color: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F1F5F9;
+      color: var(--text-main);
+      padding: 30px 16px;
+      line-height: 1.5;
+    }
+    .cert-page {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 40px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .cert-header {
+      border-bottom: 2px solid var(--navy-primary);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .cert-title-block h1 {
+      font-size: 20px;
+      color: var(--navy-primary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .cert-title-block p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .cert-seal-badge {
+      background: #F8FAFC;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 14px;
+      text-align: right;
+    }
+    .cert-seal-badge .seal-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--blue-primary);
+      letter-spacing: 0.5px;
+    }
+    .cert-seal-badge .seal-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy-primary);
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .meta-box {
+      background: #F8FAFC;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px 16px;
+    }
+    .meta-box .box-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .meta-box .box-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy-primary);
+    }
+    .section-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--navy-primary);
+      letter-spacing: 0.5px;
+      margin: 24px 0 10px 0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+    }
+    .hash-ledger {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .hash-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      align-items: center;
+      background: #F8FAFC;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .hash-row strong {
+      color: var(--navy-primary);
+    }
+    .hash-row code {
+      font-family: 'JetBrains Mono', monospace;
+      color: #0369A1;
+      word-break: break-all;
+    }
+    .ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-bottom: 24px;
+    }
+    .ledger-table th {
+      background: #F1F5F9;
+      color: var(--navy-primary);
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+    }
+    .ledger-table td {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+    .signatures-block {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+    }
+    .signature-slot {
+      text-align: center;
+    }
+    .sig-line {
+      border-bottom: 1px solid var(--navy-primary);
+      height: 48px;
+      margin-bottom: 8px;
+    }
+    .sig-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy-primary);
+    }
+    .sig-role {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .action-bar {
+      max-width: 860px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--blue-primary); color: #fff; }
+    .btn-secondary { background: #fff; border-color: var(--border-color); color: var(--text-main); }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .cert-page { border: none; box-shadow: none; padding: 20px 0; }
+      .action-bar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="action-bar">
+    <a href="javascript:window.history.back()" class="btn btn-secondary">&larr; Return to Workspace</a>
+    <button onclick="window.print()" class="btn btn-primary">Print / Save PDF Certificate</button>
+  </div>
+
+  <div class="cert-page">
+    <div class="cert-header">
+      <div class="cert-title-block">
+        <h1>TRACE Digital Forensics Workbench</h1>
+        <p>{{ cert.certificate_title }}</p>
+      </div>
+      <div class="cert-seal-badge">
+        <div class="seal-label">Tamper-Evident Seal</div>
+        <div class="seal-code">{{ cert.custody_seal }}</div>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-box">
+        <div class="box-label">Evidence Tracking Reference</div>
+        <div class="box-value">{{ cert.evidence_id }}</div>
+      </div>
+      <div class="meta-box">
+        <div class="box-label">Case Reference</div>
+        <div class="box-value">{{ cert.case_reference }}</div>
+      </div>
+      <div class="meta-box">
+        <div class="box-label">Acquisition Date (UTC)</div>
+        <div class="box-value">{{ cert.acquisition_date_utc }}</div>
+      </div>
+      <div class="meta-box">
+        <div class="box-label">Acquiring Investigator</div>
+        <div class="box-value">{{ cert.investigator.display_name }} ({{ cert.investigator.title }})</div>
+      </div>
+      <div class="meta-box">
+        <div class="box-label">Declared Evidence Source</div>
+        <div class="box-value">{{ cert.source_context }}</div>
+      </div>
+      <div class="meta-box">
+        <div class="box-label">Forensic Hardware & OS</div>
+        <div class="box-value">{{ cert.environment.os_platform }}</div>
+      </div>
+    </div>
+
+    <div class="section-title">Cryptographic Integrity Ledger (Multi-Digest Verification)</div>
+    <div class="hash-ledger">
+      <div class="hash-row">
+        <strong>Source File Name:</strong>
+        <span>{{ cert.evidence_file.filename }} ({{ cert.evidence_file.size_human }} &middot; {{ cert.evidence_file.size_bytes }} bytes)</span>
+      </div>
+      <div class="hash-row">
+        <strong>SHA-256 (Primary):</strong>
+        <code>{{ cert.evidence_file.sha256 }}</code>
+      </div>
+      <div class="hash-row">
+        <strong>SHA-1 (Secondary):</strong>
+        <code>{{ cert.evidence_file.sha1 }}</code>
+      </div>
+      <div class="hash-row">
+        <strong>MD5 (Legacy):</strong>
+        <code>{{ cert.evidence_file.md5 }}</code>
+      </div>
+    </div>
+
+    <div class="section-title">Forensic Engine & Tooling Verification</div>
+    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">
+      Extraction executed using Phil Harvey's <strong>ExifTool v{{ cert.environment.exiftool_version }}</strong> via safe JSON pipe architecture. Python interpreter runtime <strong>v{{ cert.environment.python_version }}</strong>. Non-destructive bitstream read mode enforced across all ingestion operations.
+    </div>
+
+    <div class="section-title">Custody Transfer & Analysis Chain Ledger</div>
+    <table class="ledger-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Timestamp (UTC)</th>
+          <th>Custodian / Role</th>
+          <th>Facility / Station</th>
+          <th>Purpose / Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in cert.transfer_ledger %}
+        <tr>
+          <td><strong>{{ entry.action }}</strong></td>
+          <td>{{ entry.timestamp }}</td>
+          <td>{{ entry.custodian }}</td>
+          <td>{{ entry.location }}</td>
+          <td>{{ entry.purpose }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="section-title">Investigative Notes & Evidentiary Disposition</div>
+    <div style="font-size: 13px; color: var(--text-main); background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; margin-bottom: 24px;">
+      {{ cert.notes }}
+    </div>
+
+    <div class="signatures-block">
+      <div class="signature-slot">
+        <div class="sig-line"></div>
+        <div class="sig-name">{{ cert.investigator.display_name }}</div>
+        <div class="sig-role">Acquiring Lead Forensic Investigator</div>
+      </div>
+      <div class="signature-slot">
+        <div class="sig-line"></div>
+        <div class="sig-name">Digital Evidence Custodian</div>
+        <div class="sig-role">Centurion University Forensics Laboratory</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; font-size: 10px; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-color); padding-top: 12px;">
+      TRACE Digital Forensics Workbench &middot; Evidentiary Certificate ID: {{ cert.evidence_id }} &middot; Cryptographic Seal: {{ cert.custody_seal }}
+    </div>
+  </div>
+
+</body>
+</html>

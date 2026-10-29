@@ -1,0 +1,28 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python cache & testing
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.db
+.pytest_cache/
+
+# Uploads, databases and temporary investigation data
+uploads/
+temp/
+data/*.db
+data/sanitized/*
+*.log
+
+# ExifTool binaries (large binary folder, documented in README)
+tools/exiftool_files/
+tools/exiftool.exe
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db

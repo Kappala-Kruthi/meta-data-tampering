@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Investigator Profile{% endblock %}
+{% block page_title %}Investigator Profile{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;">
+  <!-- Profile Summary Card -->
+  <div class="card">
+    <div style="text-align: center; padding: 16px 0;">
+      <div style="width: 84px; height: 84px; border-radius: 50%; background-color: var(--navy-primary); color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; border: 3px solid var(--blue-primary); margin-bottom: 16px;">
+        {{ profile.avatar_initials or 'BK' }}
+      </div>
+      <h2 style="font-size: 20px; margin-bottom: 4px;">{{ profile.display_name or session.get('user_id', 'Bhuvana Kruthi') }}</h2>
+      <div style="color: var(--blue-primary); font-weight: 500; font-size: 14px; margin-bottom: 8px;">
+        {{ profile.professional_title or 'Digital Forensics Analyst' }}
+      </div>
+      <div class="badge badge-info" style="margin-bottom: 16px;">Account ID: {{ session.get('user_id', 'Bhuvana@123') }}</div>
+      
+      <p style="font-size: 13px; color: var(--text-secondary); text-align: left; background: #f8fafc; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); line-height: 1.5; margin-bottom: 16px;">
+        {{ profile.bio or 'Specializing in digital evidence integrity, media metadata verification, and tamper detection using automated ExifTool parsing pipelines.' }}
+      </p>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; font-size: 13px;">
+        <div style="margin-bottom: 8px;">
+          <span style="color: var(--text-secondary);">Account Role:</span>
+          <strong style="color: var(--navy-primary); float: right;">{{ profile.role or 'Investigator' }}</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-secondary);">Member Since:</span>
+          <span style="color: var(--navy-primary); float: right;">{{ profile.created_at or 'October 2026' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Edit Form -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Edit Investigator Profile</div>
+        <div class="card-subtitle">Manage your personal credentials, contact name, and technical specializations</div>
+      </div>
+    </div>
+
+    <form action="{{ url_for('profile') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-group">
+          <label class="form-label" for="display_name">Display Name</label>
+          <input type="text" id="display_name" name="display_name" class="form-control" value="{{ profile.display_name or '' }}" required>
+          <div class="form-helper">Full legal name or academic title shown across reports.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="avatar_initials">Initials (2-3 chars)</label>
+          <input type="text" id="avatar_initials" name="avatar_initials" class="form-control" maxlength="4" value="{{ profile.avatar_initials or 'BK' }}">
+          <div class="form-helper">Displayed in top navigation avatar.</div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" for="professional_title">Professional / Academic Title</label>
+        <input type="text" id="professional_title" name="professional_title" class="form-control" value="{{ profile.professional_title or '' }}" placeholder="e.g. Lead Digital Forensics Researcher">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" for="bio">Professional Biography</label>
+        <textarea id="bio" name="bio" rows="4" class="form-control" style="font-size: 13px;" placeholder="Describe your forensic focus, methodologies, and academic scope...">{{ profile.bio or '' }}</textarea>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" for="areas_of_interest">Areas of Interest (Comma separated)</label>
+        <input type="text" id="areas_of_interest" name="areas_of_interest" class="form-control" value="{{ profile.areas_of_interest or 'EXIF Forensics, Timestamp Tampering, Cryptographic Hashing, Steganography' }}">
+        <div class="form-helper">Specializations featured on your investigator workspace.</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px;">
+        <label class="form-label" for="skills_technologies">Skills & Technologies (Comma separated)</label>
+        <input type="text" id="skills_technologies" name="skills_technologies" class="form-control" value="{{ profile.skills_technologies or 'ExifTool, Python, Flask, SHA-256, SQLite, Pillow, ELA' }}">
+        <div class="form-helper">Tools and protocols utilized in investigations.</div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

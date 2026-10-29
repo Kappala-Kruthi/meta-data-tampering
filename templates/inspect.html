@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Single-File Metadata Inspector{% endblock %}
+{% block page_title %}Single-File Forensic Metadata Inspector{% endblock %}
+
+{% block content %}
+<!-- Upload Card -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Select Evidence File for Inspection</div>
+      <div class="card-subtitle">Supported formats: JPEG, PNG, TIFF, WebP, HEIC/HEIF (read-only execution)</div>
+    </div>
+  </div>
+
+  <form action="{{ url_for('inspect') }}" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="dropzone" id="inspect-dropzone">
+      <div class="dropzone-icon-box">FILE</div>
+      <div class="dropzone-text">Click or drag and drop a media file here</div>
+      <div class="dropzone-sub">Upload limit: 50 MB. File is analyzed locally in temporary storage and never transmitted externally.</div>
+      <div class="file-preview" id="inspect-preview"></div>
+      <input type="file" name="evidence_file" accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.heic,.heif" required>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+      <div class="form-group">
+        <label class="form-label" for="case_title">Case Reference or Title (Optional)</label>
+        <input type="text" id="case_title" name="case_title" class="form-control" placeholder="e.g. Case #2026-IMG-001">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="notes">Investigator Notes (Optional)</label>
+        <input type="text" id="notes" name="notes" class="form-control" placeholder="e.g. Suspected timestamp modification">
+      </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 10px;">
+      <button type="submit" class="btn btn-primary">
+        Run ExifTool Extraction and Forensic Analysis
+      </button>
+    </div>
+  </form>
+</div>
+
+{% if result %}
+<!-- File Integrity & Hashes Card -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Cryptographic File Integrity</div>
+      <div class="card-subtitle">Bit-for-bit cryptographic verification computed via streaming buffer</div>
+    </div>
+    {% if inv_id %}
+    <span class="badge badge-info">Case ID: {{ inv_id }}</span>
+    {% endif %}
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">Filename and Size</div>
+      <div style="font-size: 15px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">{{ hashes.file_name }}</div>
+      <div style="font-size: 13px; color: var(--blue-primary); margin-top: 2px;">{{ hashes.file_size_human }} ({{ hashes.file_size_bytes }} bytes)</div>
+    </div>
+
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">SHA-256 Digest (Primary)</span>
+        <button type="button" class="btn btn-secondary btn-sm btn-copy" data-copy-text="{{ hashes.sha256 }}" style="padding: 2px 6px; font-size: 11px;">Copy</button>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--navy-primary); word-break: break-all; margin-top: 6px;">
+        {{ hashes.sha256 }}
+      </div>
+    </div>
+
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 600;">MD5 Digest (Legacy Reference)</span>
+        <button type="button" class="btn btn-secondary btn-sm btn-copy" data-copy-text="{{ hashes.md5 }}" style="padding: 2px 6px; font-size: 11px;">Copy</button>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); word-break: break-all; margin-top: 6px;">
+        {{ hashes.md5 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forensic Heuristics & Anomalies -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Forensic Anomaly Indicators</div>
+      <div class="card-subtitle">Explainable heuristic rules evaluated against extracted metadata</div>
+    </div>
+    <span class="badge {% if anomalies %}badge-danger{% else %}badge-success{% endif %}">
+      {{ anomalies|length }} Indicator(s)
+    </span>
+  </div>
+
+  {% if anomalies %}
+    {% for a in anomalies %}
+    <div class="anomaly-item {% if a.severity == 'SIGNIFICANT_DIFFERENCE' %}significant{% elif a.severity == 'REVIEW_RECOMMENDED' %}review{% endif %}">
+      <div class="anomaly-header">
+        <span class="anomaly-title">{{ a.title }}</span>
+        <span class="badge {% if a.severity == 'SIGNIFICANT_DIFFERENCE' %}badge-danger{% elif a.severity == 'REVIEW_RECOMMENDED' %}badge-warning{% else %}badge-info{% endif %}">
+          {{ a.severity }}
+        </span>
+      </div>
+      <div class="anomaly-desc">{{ a.description }}</div>
+      <div class="anomaly-evidence">Evidence: {{ a.evidence }}</div>
+      <div class="anomaly-mitigation">Forensic context: {{ a.mitigating_factors }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="text-align: center; padding: 24px; color: var(--success);">
+      <strong>No metadata anomalies detected.</strong>
+      <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Metadata structure is consistent with standard camera or unedited image profiles.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Hardware & Quick Summary Grid -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Key Metadata Summary</div>
+      <div class="card-subtitle">High-level extracted attributes (Total tags: {{ result.tag_count }})</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+    <div style="background-color: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">CAMERA MAKE</div>
+      <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">{{ result.summary.camera_make or 'Unavailable' }}</div>
+    </div>
+    <div style="background-color: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">CAMERA MODEL</div>
+      <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">{{ result.summary.camera_model or 'Unavailable' }}</div>
+    </div>
+    <div style="background-color: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">SOFTWARE / TOOL</div>
+      <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">{{ result.summary.software or 'None / Not Reported' }}</div>
+    </div>
+    <div style="background-color: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">CAPTURE DATE</div>
+      <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">{{ result.summary.date_original or 'Unavailable' }}</div>
+    </div>
+    <div style="background-color: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">GPS COORDINATES</div>
+      <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">{{ result.summary.gps_position or result.summary.gps_latitude or 'No Geotag' }}</div>
+    </div>
+    <div style="background-color: #f8fafc; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">IMAGE RESOLUTION</div>
+      <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-top: 4px;">
+        {% if result.summary.image_width and result.summary.image_height %}
+          {{ result.summary.image_width }} x {{ result.summary.image_height }}
+        {% else %}
+          Unavailable
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if result.timeline %}
+  <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+    <div style="font-size: 14px; font-weight: 600; color: var(--navy-primary); margin-bottom: 8px;">Metadata Chronological Timeline</div>
+    <div class="timeline-list">
+      {% for item in result.timeline %}
+      <div class="timeline-entry">
+        <span class="timeline-time">{{ item.timestamp }}</span>
+        <div class="timeline-tag"><strong>{{ item.field }}</strong> ({{ item.type }})</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Detailed Grouped Metadata Tables -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Comprehensive Metadata Tag Explorer</div>
+      <div class="card-subtitle">Search and filter across all extracted metadata groups</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="toggleJsonView('raw-json-box')">Toggle Raw JSON</button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick='downloadJson({{ result.raw|tojson }}, "exiftool_metadata.json")'>Export JSON</button>
+      {% if inv_id %}
+      <a href="{{ url_for('view_report', inv_id=inv_id) }}" target="_blank" class="btn btn-primary btn-sm">Printable Report</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Raw JSON Box (Hidden by default) -->
+  <div id="raw-json-box" style="display: none; margin-bottom: 20px;">
+    <pre style="background-color: #0b1728; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; max-height: 400px; overflow: auto; font-family: var(--font-mono); font-size: 12px; color: #93c5fd;">{{ result.raw | tojson(indent=2) }}</pre>
+  </div>
+
+  <!-- Live Search -->
+  <div class="search-wrapper">
+    <span class="search-icon-indicator">FILTER:</span>
+    <input type="text" class="search-input" data-target-table="metadata-table" placeholder="Type tag name or value to filter metadata (e.g. Software, Canon, Exposure, Date)...">
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table" id="metadata-table">
+      <thead>
+        <tr>
+          <th style="width: 15%;">Group</th>
+          <th style="width: 25%;">Tag Name</th>
+          <th style="width: 60%;">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group_name, tags in result.groups.items() %}
+          {% for tag_name, val in tags.items() %}
+          <tr>
+            <td><span class="badge badge-info">{{ group_name }}</span></td>
+            <td><code>{{ tag_name }}</code></td>
+            <td style="word-break: break-all;">{{ val }}</td>
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

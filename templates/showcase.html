@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Project Showcase{% endblock %}
+{% block page_title %}Academic Project Showcase{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Admin Showcase Controls (Only for logged-in researchers) -->
+  {% if session.get('user_id') %}
+  <div class="card" style="border-left: 4px solid var(--blue-primary); background: #f8fafc;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <strong style="color: var(--navy-primary); font-size: 14px;">Showcase Privacy & Publishing Control</strong>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+          Controls public visibility of the project showcase. Case evidence and reports are strictly kept confidential regardless of this toggle.
+        </p>
+      </div>
+
+      <form action="{{ url_for('showcase') }}" method="POST" style="display: flex; align-items: center; gap: 12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer;">
+          <input type="checkbox" name="is_published" value="1" {% if showcase.is_published %}checked{% endif %}>
+          <span>Publicly Published</span>
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm">Update Publishing State</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Hero Header -->
+  <div class="card" style="text-align: center; padding: 40px 24px;">
+    <span class="badge badge-info" style="font-size: 12px; padding: 4px 12px; margin-bottom: 12px;">ACADEMIC DIGITAL FORENSICS CAPSTONE</span>
+    <h1 style="font-size: 28px; color: var(--navy-primary); margin-bottom: 12px;">
+      {{ showcase.project_title or 'Metadata Tampering Detection in Media Files Using ExifTool' }}
+    </h1>
+    <p style="font-size: 16px; color: var(--text-secondary); max-width: 720px; margin: 0 auto 20px auto; line-height: 1.6;">
+      An automated digital forensics framework and web platform for extracting EXIF, IPTC, and XMP structures, identifying chronological inconsistencies, detecting image editing signatures, and conducting differential paired comparisons.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+      <a href="{{ showcase.repo_url or 'https://github.com/Kappala-Kruthi/meta-data-tampering' }}" target="_blank" class="btn btn-secondary btn-sm">
+        Source Code Repository
+      </a>
+      <a href="{{ url_for('profile') }}" class="btn btn-secondary btn-sm">
+        Author Profile
+      </a>
+      <a href="{{ url_for('help_center') }}" class="btn btn-secondary btn-sm">
+        Forensic Methodology Guide
+      </a>
+    </div>
+  </div>
+
+  <!-- Problem Statement & Objectives -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Problem Statement</div>
+          <div class="card-subtitle">The evidentiary challenge of digital media</div>
+        </div>
+      </div>
+      <p style="font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
+        Digital photographs are increasingly submitted as legal, journalistic, and intelligence evidence. However, modern photo-editing software and command-line utilities allow attackers to effortlessly alter capture dates, camera models, GPS coordinates, and image pixels without visible distortions. Establishing authenticity requires rigorous, verifiable metadata extraction and rule-based anomaly detection.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Project Objectives</div>
+          <div class="card-subtitle">Core technical deliverables achieved</div>
+        </div>
+      </div>
+      <ul style="padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+        <li>Automate deep metadata extraction using Phil Harvey's ExifTool engine.</li>
+        <li>Implement chronological inconsistency rules (ModifyDate vs DateTimeOriginal).</li>
+        <li>Detect third-party editing signatures (Photoshop, GIMP, Canva, ExifTool itself).</li>
+        <li>Perform two-file differential comparisons (added, missing, changed tags).</li>
+        <li>Distinguish intentional tampering from benign social media compression (Pinterest, WhatsApp).</li>
+        <li>Compute SHA-256 cryptographic digests for tamper-evident digital custody.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- System Architecture & Technologies -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Technical Architecture & Stack</div>
+        <div class="card-subtitle">Verified software components and libraries</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+        <strong style="color: var(--navy-primary); font-size: 13px; display: block; margin-bottom: 4px;">Metadata Extraction</strong>
+        <div style="font-size: 12px; color: var(--text-secondary);">Phil Harvey's ExifTool via safe subprocess JSON pipe.</div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+        <strong style="color: var(--navy-primary); font-size: 13px; display: block; margin-bottom: 4px;">Backend Framework</strong>
+        <div style="font-size: 12px; color: var(--text-secondary);">Python 3, Flask, Werkzeug, SQLite3 relational database.</div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+        <strong style="color: var(--navy-primary); font-size: 13px; display: block; margin-bottom: 4px;">Cryptographic Hashing</strong>
+        <div style="font-size: 12px; color: var(--text-secondary);">Python hashlib SHA-256 block-streamed digest engine.</div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+        <strong style="color: var(--navy-primary); font-size: 13px; display: block; margin-bottom: 4px;">Pixel Forensics (ELA)</strong>
+        <div style="font-size: 12px; color: var(--text-secondary);">Pillow (PIL) Error Level Analysis and quantization profiling.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Limitations & Future Work -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Limitations & Future Roadmap</div>
+        <div class="card-subtitle">Transparent academic boundary analysis</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+        <strong style="color: var(--navy-primary);">Current Academic Boundaries:</strong>
+        <p style="color: var(--text-secondary); margin-top: 4px;">
+          Without a verified reference copy or trusted sensor fingerprint, complete absence of metadata (as seen in web-scraped images) cannot definitively prove or disprove editing. The platform accurately labels such cases as Inconclusive rather than issuing false-positive determinations.
+        </p>
+      </div>
+
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+        <strong style="color: var(--navy-primary);">Future Enhancements:</strong>
+        <p style="color: var(--text-secondary); margin-top: 4px;">
+          1. Photo Response Non-Uniformity (PRNU) sensor noise pattern matching.<br>
+          2. Machine learning classification of double-JPEG compression grid artifacts.<br>
+          3. C2PA (Coalition for Content Provenance and Authenticity) manifest cryptographic parsing.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

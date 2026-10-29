@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Hex & Binary File Structure Inspector{% endblock %}
+{% block page_title %}Hex & Binary Structure Inspector{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header Card & Upload Form -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Low-Level Binary Structure & Magic Byte Verification</div>
+        <div class="card-subtitle">Examines raw file signatures, maps EXIF/JFIF marker segments, and scans for appended steganography payloads</div>
+      </div>
+    </div>
+
+    <form action="{{ url_for('hex_inspector_route') }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label" for="evidence_file">Select Evidence Media File</label>
+        <div class="file-drop-zone" id="hexDropZone" onclick="document.getElementById('evidence_file').click()">
+          <div class="drop-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue-primary)" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <div class="drop-text">Click or drag & drop media file to inspect low-level hex structure</div>
+          <div class="drop-hint">Supports JPEG, PNG, TIFF, WebP, GIF, BMP</div>
+          <input type="file" id="evidence_file" name="evidence_file" accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp,.gif" style="display: none;" onchange="document.getElementById('selectedFileName').innerText = this.files[0] ? this.files[0].name : '';">
+          <div id="selectedFileName" style="margin-top: 10px; font-weight: 600; color: var(--blue-primary);"></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary">Inspect Binary Structure</button>
+      </div>
+    </form>
+  </div>
+
+  {% if inspection %}
+  <!-- Status & File Overview -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Magic Signature</div>
+      <div style="font-size: 18px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;">
+        {{ inspection.detected_format }}
+      </div>
+      <span class="badge {% if inspection.is_valid_header %}badge-success{% else %}badge-danger{% endif %}" style="margin-top: 8px;">
+        {% if inspection.is_valid_header %}Valid Header{% else %}Corrupt / Non-Standard{% endif %}
+      </span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Extension Match</div>
+      <div style="font-size: 18px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;">
+        .{{ inspection.extension }}
+      </div>
+      <span class="badge {% if inspection.extension_match %}badge-success{% else %}badge-warning{% endif %}" style="margin-top: 8px;">
+        {% if inspection.extension_match %}Matches Signature{% else %}Extension Discrepancy{% endif %}
+      </span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">File Size</div>
+      <div style="font-size: 18px; font-weight: 700; color: var(--navy-primary); margin-top: 4px;">
+        {{ inspection.file_size }} bytes
+      </div>
+      <span class="badge badge-info" style="margin-top: 8px;">Physical Disk Byte Count</span>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Appended Payload Scan</div>
+      <div style="font-size: 18px; font-weight: 700; {% if inspection.has_appended_data %}color: #dc2626;{% else %}color: #16a34a;{% endif %} margin-top: 4px;">
+        {% if inspection.has_appended_data %}{{ inspection.appended_data_bytes }} bytes past EOF{% else %}Clean EOF{% endif %}
+      </div>
+      <span class="badge {% if inspection.has_appended_data %}badge-danger{% else %}badge-success{% endif %}" style="margin-top: 8px;">
+        {% if inspection.has_appended_data %}Steganography Flagged{% else %}No Post-EOF Data{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Findings List -->
+  {% if inspection.findings %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Structural Diagnostic Findings</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for f in inspection.findings %}
+      <div style="border: 1px solid var(--border-color); border-left: 4px solid {% if f.severity == 'HIGH' %}#dc2626{% elif f.severity == 'MEDIUM' %}#f59e0b{% else %}#2563eb{% endif %}; border-radius: var(--radius-sm); padding: 14px; background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <strong style="color: var(--navy-primary); font-size: 14px;">{{ f.title }}</strong>
+          <span class="badge {% if f.severity == 'HIGH' %}badge-danger{% elif f.severity == 'MEDIUM' %}badge-warning{% else %}badge-info{% endif %}">
+            {{ f.category }} &middot; {{ f.status }}
+          </span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+          {{ f.description }}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Segment Marker Map (for JPEG) -->
+  {% if inspection.segments %}
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Metadata & Container Segment Map</div>
+        <div class="card-subtitle">Sequence of structural markers, quantization tables, and metadata application segments parsed from raw byte stream</div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Byte Offset</th>
+            <th>Marker Hex</th>
+            <th>Segment Name & Purpose</th>
+            <th>Length (Bytes)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for seg in inspection.segments %}
+          <tr>
+            <td><code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{ seg.offset_hex }} ({{ seg.offset }})</code></td>
+            <td><span class="badge badge-info" style="font-family: 'JetBrains Mono', monospace;">{{ seg.marker }}</span></td>
+            <td><strong>{{ seg.name }}</strong></td>
+            <td>{{ seg.length }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Raw Hex Dumps -->
+  <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+    <!-- Header Hex Dump -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">File Header Hex Dump (First 256 Bytes)</div>
+          <div class="card-subtitle">Inspects magic signatures, container headers, and initial metadata records</div>
+        </div>
+      </div>
+
+      <div style="background: #0B1728; color: #E2E8F0; padding: 16px; border-radius: var(--radius-md); font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-x: auto; line-height: 1.6;">
+        <div style="color: #94A3B8; border-bottom: 1px solid #1E293B; padding-bottom: 6px; margin-bottom: 8px;">
+          OFFSET &nbsp; 00 01 02 03 04 05 06 07 &nbsp;08 09 0A 0B 0C 0D 0E 0F &nbsp; ASCII
+        </div>
+        {% for row in inspection.header_hex_dump %}
+        <div>
+          <span style="color: #38BDF8;">{{ row.offset }}</span> &nbsp;
+          <span style="color: #F8FAFC;">{{ row.hex }}</span> &nbsp;
+          <span style="color: #A3E635;">{{ row.ascii }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Trailer Hex Dump -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">File Trailer Hex Dump (Terminal 128 Bytes)</div>
+          <div class="card-subtitle">Inspects End of Image (EOI) markers and checks for appended steganography payloads</div>
+        </div>
+      </div>
+
+      <div style="background: #0B1728; color: #E2E8F0; padding: 16px; border-radius: var(--radius-md); font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-x: auto; line-height: 1.6;">
+        <div style="color: #94A3B8; border-bottom: 1px solid #1E293B; padding-bottom: 6px; margin-bottom: 8px;">
+          OFFSET &nbsp; 00 01 02 03 04 05 06 07 &nbsp;08 09 0A 0B 0C 0D 0E 0F &nbsp; ASCII
+        </div>
+        {% for row in inspection.trailer_hex_dump %}
+        <div>
+          <span style="color: #38BDF8;">{{ row.offset }}</span> &nbsp;
+          <span style="color: #F8FAFC;">{{ row.hex }}</span> &nbsp;
+          <span style="color: #A3E635;">{{ row.ascii }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

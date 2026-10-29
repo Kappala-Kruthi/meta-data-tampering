@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback & Bug Reporting{% endblock %}
+{% block page_title %}Feedback & Support{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+  
+  <!-- Left Column: Feedback Submission Form -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Submit Forensic Feedback or Bug Report</div>
+        <div class="card-subtitle">Report metadata parsing anomalies, UI observations, or feature enhancements</div>
+      </div>
+    </div>
+
+    <form action="{{ url_for('feedback') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="category">Category</label>
+        <select id="category" name="category" class="form-control" required>
+          <option value="Bug Report">Bug Report (Unexpected error or extraction anomaly)</option>
+          <option value="Feature Request">Feature Request (New forensic tool or tag check)</option>
+          <option value="Metadata Parsing Issue">Metadata Parsing Issue (ExifTool tag interpretation)</option>
+          <option value="Usability / UI">Usability / UI Suggestion</option>
+          <option value="General Question">General Academic Question</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="subject">Subject / Summary</label>
+        <input type="text" id="subject" name="subject" class="form-control" required placeholder="Brief summary of the issue or enhancement" maxlength="120">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="description">Detailed Description</label>
+        <textarea id="description" name="description" rows="4" class="form-control" required placeholder="Describe what occurred, expected behavior, and relevant media formats (JPEG, TIFF, WebP, etc.)..." style="font-size: 13px;"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="steps_to_reproduce">Steps to Reproduce (Optional)</label>
+        <textarea id="steps_to_reproduce" name="steps_to_reproduce" rows="3" class="form-control" placeholder="1. Upload file A&#10;2. Select Pinterest source context&#10;3. Click Analyze" style="font-size: 13px; font-family: var(--font-mono);"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label" for="error_id">Optional Error Identifier / Case ID</label>
+        <input type="text" id="error_id" name="error_id" class="form-control" placeholder="e.g. Case #2026-SINGLE-01 or Python traceback code">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        Submit Feedback
+      </button>
+    </form>
+  </div>
+
+  <!-- Right Column: User's Past Submissions -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Your Submitted Reports</div>
+        <div class="card-subtitle">Track status and review records submitted by your investigator account</div>
+      </div>
+    </div>
+
+    {% set user_feedback = feedback_list or past_feedback %}
+    {% if user_feedback %}
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for fb in user_feedback %}
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+          <div>
+            <span class="badge badge-info" style="font-size: 11px; margin-right: 6px;">{{ fb.category }}</span>
+            <strong style="color: var(--navy-primary); font-size: 14px;">{{ fb.subject }}</strong>
+          </div>
+          <span class="badge {% if fb.status == 'Open' %}badge-warning{% elif fb.status == 'In Review' %}badge-info{% elif fb.status == 'Resolved' %}badge-success{% else %}badge-secondary{% endif %}">
+            {{ fb.status }}
+          </span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;">
+          {{ fb.description }}
+        </p>
+        {% if fb.steps_to_reproduce %}
+        <div style="font-size: 11px; background: #f8fafc; padding: 8px; border-radius: var(--radius-sm); color: var(--text-secondary); margin-bottom: 8px; font-family: var(--font-mono);">
+          <strong>Steps:</strong> {{ fb.steps_to_reproduce }}
+        </div>
+        {% endif %}
+        <div style="font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono);">
+          Submitted: {{ fb.created_at }} {% if fb.error_id %}| Case: {{ fb.error_id }}{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 48px 20px; color: var(--text-secondary);">
+      <p style="font-weight: 600; color: var(--navy-primary); margin-bottom: 4px;">No Past Submissions</p>
+      <p style="font-size: 13px;">Any bug reports or enhancement proposals you submit will appear here with real tracking status.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

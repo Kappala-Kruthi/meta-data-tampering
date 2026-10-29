@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Keyboard Shortcuts Guide{% endblock %}
+{% block page_title %}Keyboard Shortcuts{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Workbench Hotkeys & Keyboard Navigation</div>
+      <div class="card-subtitle">Accelerate forensic investigation navigation using single-key shortcuts</div>
+    </div>
+  </div>
+
+  <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 20px; font-size: 13px; color: #1e40af;">
+    <strong>Safety Guard:</strong> Keyboard shortcuts are automatically disabled while you are actively typing inside text inputs, textareas, or dropzone file selectors.
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Shortcut Key</th>
+          <th style="width: 50%;">Action Performed</th>
+          <th style="width: 25%;">Direct Link</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">?</kbd></td>
+          <td>Open Keyboard Shortcuts Guide</td>
+          <td><a href="{{ url_for('shortcuts') }}" class="btn btn-secondary btn-sm">Shortcuts</a></td>
+        </tr>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">D</kbd></td>
+          <td>Navigate to Forensic Command Dashboard</td>
+          <td><a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-sm">Dashboard</a></td>
+        </tr>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">S</kbd></td>
+          <td>Start Single Image Authenticity Analysis</td>
+          <td><a href="{{ url_for('single_analysis') }}" class="btn btn-secondary btn-sm">Single Analysis</a></td>
+        </tr>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">C</kbd></td>
+          <td>Open Two-File Differential Comparison</td>
+          <td><a href="{{ url_for('compare') }}" class="btn btn-secondary btn-sm">Compare Files</a></td>
+        </tr>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">V</kbd></td>
+          <td>Open Cryptographic Hash Verification</td>
+          <td><a href="{{ url_for('verify') }}" class="btn btn-secondary btn-sm">Hash Verify</a></td>
+        </tr>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">H</kbd></td>
+          <td>Open Case Investigation History Archive</td>
+          <td><a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm">History</a></td>
+        </tr>
+        <tr>
+          <td><kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 10px; font-family: var(--font-mono); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">N</kbd></td>
+          <td>Open Notification Center</td>
+          <td><a href="{{ url_for('notifications') }}" class="btn btn-secondary btn-sm">Notifications</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Two-File Forensic Comparison{% endblock %}
+{% block page_title %}Two-File Forensic Differential Comparison{% endblock %}
+
+{% block content %}
+<!-- Dual Upload Form -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Forensic Differential Comparison Workspace</div>
+      <div class="card-subtitle">Upload File A (Reference or Suspected Original) and File B (Target or Suspected Derivative)</div>
+    </div>
+  </div>
+
+  <form action="{{ url_for('compare') }}" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <!-- File A Box -->
+      <div>
+        <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; color: var(--navy-primary);">
+          FILE A: REFERENCE (ORIGINAL)
+        </div>
+        <div class="dropzone" id="dropzone-a">
+          <div class="dropzone-icon-box">A</div>
+          <div class="dropzone-text">Select File A</div>
+          <div class="dropzone-sub">Original media file</div>
+          <div class="file-preview" id="preview-a"></div>
+          <input type="file" name="file_a" accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.heic,.heif" required>
+        </div>
+      </div>
+
+      <!-- File B Box -->
+      <div>
+        <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; color: var(--navy-primary);">
+          FILE B: SUSPECTED DERIVATIVE
+        </div>
+        <div class="dropzone" id="dropzone-b">
+          <div class="dropzone-icon-box">B</div>
+          <div class="dropzone-text">Select File B</div>
+          <div class="dropzone-sub">Potentially modified file</div>
+          <div class="file-preview" id="preview-b"></div>
+          <input type="file" name="file_b" accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.heic,.heif" required>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+      <div class="form-group">
+        <label class="form-label" for="case_title">Case Title or Reference (Optional)</label>
+        <input type="text" id="case_title" name="case_title" class="form-control" placeholder="e.g. Case #2026-COMP-001">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="notes">Forensic Notes (Optional)</label>
+        <input type="text" id="notes" name="notes" class="form-control" placeholder="e.g. Evaluating suspected metadata editing">
+      </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 10px;">
+      <button type="submit" class="btn btn-primary">
+        Run Side-by-Side Differential Analysis
+      </button>
+    </div>
+  </form>
+</div>
+
+{% if comp_results %}
+<!-- Cryptographic Comparison Result -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Cryptographic Integrity Assessment</div>
+      <div class="card-subtitle">Byte-level comparison using SHA-256</div>
+    </div>
+    <span class="badge {% if comp_results.sha256_match %}badge-success{% else %}badge-warning{% endif %}">
+      {% if comp_results.sha256_match %}MATCHING SHA-256{% else %}DIFFERING SHA-256{% endif %}
+    </span>
+  </div>
+
+  <div style="background-color: {% if comp_results.sha256_match %}var(--success-surface){% else %}var(--warning-surface){% endif %}; border-left: 4px solid {% if comp_results.sha256_match %}var(--success){% else %}var(--warning){% endif %}; padding: 14px 18px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 20px; color: var(--navy-primary);">
+    {{ comp_results.summary }}
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <!-- File A Hashes -->
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 13px; font-weight: 600; color: var(--navy-primary); margin-bottom: 6px;">
+        FILE A: {{ hashes_a.file_name }} ({{ hashes_a.file_size_human }})
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">SHA-256:</div>
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--navy-primary); word-break: break-all; margin-top: 2px;">
+        {{ hashes_a.sha256 }}
+      </div>
+    </div>
+
+    <!-- File B Hashes -->
+    <div style="background-color: #f8fafc; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="font-size: 13px; font-weight: 600; color: var(--navy-primary); margin-bottom: 6px;">
+        FILE B: {{ hashes_b.file_name }} ({{ hashes_b.file_size_human }})
+      </div>
+      <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">SHA-256:</div>
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--navy-primary); word-break: break-all; margin-top: 2px;">
+        {{ hashes_b.sha256 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Differential Anomaly Findings -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Differential Tampering Indicators</div>
+      <div class="card-subtitle">Heuristic rules evaluated between File A and File B</div>
+    </div>
+    <span class="badge {% if anomalies %}badge-danger{% else %}badge-success{% endif %}">
+      {{ anomalies|length }} Flag(s)
+    </span>
+  </div>
+
+  {% if anomalies %}
+    {% for a in anomalies %}
+    <div class="anomaly-item {% if a.severity == 'SIGNIFICANT_DIFFERENCE' %}significant{% elif a.severity == 'REVIEW_RECOMMENDED' %}review{% endif %}">
+      <div class="anomaly-header">
+        <span class="anomaly-title">{{ a.title }}</span>
+        <span class="badge {% if a.severity == 'SIGNIFICANT_DIFFERENCE' %}badge-danger{% elif a.severity == 'REVIEW_RECOMMENDED' %}badge-warning{% else %}badge-info{% endif %}">
+          {{ a.severity }}
+        </span>
+      </div>
+      <div class="anomaly-desc">{{ a.description }}</div>
+      <div class="anomaly-evidence">Evidence: {{ a.evidence }}</div>
+      <div class="anomaly-mitigation">Forensic context: {{ a.mitigating_factors }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="text-align: center; padding: 20px; color: var(--success);">
+      No differential tampering indicators detected.
+    </div>
+  {% endif %}
+</div>
+
+<!-- Differential Metrics Bar -->
+<div class="stat-card-row" style="margin-bottom: 20px;">
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Matching Tags</div>
+    <div class="stat-metric-val" style="color: var(--success);">{{ diff.metrics.matching_count }}</div>
+    <div class="stat-metric-sub">Identical normalized values</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Modified Tags</div>
+    <div class="stat-metric-val" style="color: var(--error);">{{ diff.metrics.changed_count }}</div>
+    <div class="stat-metric-sub">Differing tag values</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Only in File A</div>
+    <div class="stat-metric-val" style="color: var(--warning);">{{ diff.metrics.only_a_count }}</div>
+    <div class="stat-metric-sub">Stripped or absent in File B</div>
+  </div>
+  <div class="stat-metric-card">
+    <div class="stat-metric-title">Only in File B</div>
+    <div class="stat-metric-val" style="color: var(--blue-primary);">{{ diff.metrics.only_b_count }}</div>
+    <div class="stat-metric-sub">Newly added tags in File B</div>
+  </div>
+</div>
+
+<!-- Differential Comparison Matrix -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Side-by-Side Metadata Differential Matrix</div>
+      <div class="card-subtitle">Similarity Index: <strong>{{ diff.metrics.similarity_percentage }}%</strong> of {{ diff.metrics.total_tags_compared }} compared tags</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('export_csv_route', inv_id=inv_id) }}" class="btn btn-secondary btn-sm">Export CSV</a>
+      <a href="{{ url_for('view_report', inv_id=inv_id) }}" target="_blank" class="btn btn-primary btn-sm">Printable Report</a>
+    </div>
+  </div>
+
+  <!-- Category Filter Tabs -->
+  <div class="tab-nav">
+    <button type="button" class="tab-btn active" data-category="all">
+      All ({{ diff.metrics.total_tags_compared }})
+    </button>
+    <button type="button" class="tab-btn" data-category="changed">
+      Modified Values ({{ diff.metrics.changed_count }})
+    </button>
+    <button type="button" class="tab-btn" data-category="only_a">
+      Only in File A ({{ diff.metrics.only_a_count }})
+    </button>
+    <button type="button" class="tab-btn" data-category="only_b">
+      Only in File B ({{ diff.metrics.only_b_count }})
+    </button>
+    <button type="button" class="tab-btn" data-category="matching">
+      Matching ({{ diff.metrics.matching_count }})
+    </button>
+  </div>
+
+  <!-- Search Filter -->
+  <div class="search-wrapper">
+    <span class="search-icon-indicator">FILTER:</span>
+    <input type="text" class="search-input" data-target-table="comparison-table" placeholder="Filter by tag name (e.g. Software, GPS, Date, Make)...">
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table" id="comparison-table">
+      <thead>
+        <tr>
+          <th style="width: 14%;">Status</th>
+          <th style="width: 14%;">Group</th>
+          <th style="width: 22%;">Tag Name</th>
+          <th style="width: 25%;">File A (Reference)</th>
+          <th style="width: 25%;">File B (Derivative)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Changed Tags -->
+        {% for item in diff.changed %}
+        <tr data-category="changed" style="background-color: #fef2f2;">
+          <td><span class="badge badge-danger">CHANGED</span></td>
+          <td><span class="badge badge-info">{{ item.group }}</span></td>
+          <td><code>{{ item.tag }}</code></td>
+          <td style="color: var(--error); word-break: break-all;">{{ item.value_a }}</td>
+          <td style="color: var(--success); font-weight: 600; word-break: break-all;">{{ item.value_b }}</td>
+        </tr>
+        {% endfor %}
+
+        <!-- Only in File A -->
+        {% for item in diff.only_a %}
+        <tr data-category="only_a" style="background-color: #fffbeb;">
+          <td><span class="badge badge-warning">ONLY IN A</span></td>
+          <td><span class="badge badge-info">{{ item.group }}</span></td>
+          <td><code>{{ item.tag }}</code></td>
+          <td style="word-break: break-all;">{{ item.value_a }}</td>
+          <td style="color: var(--text-secondary); font-style: italic;">[Absent / Stripped]</td>
+        </tr>
+        {% endfor %}
+
+        <!-- Only in File B -->
+        {% for item in diff.only_b %}
+        <tr data-category="only_b" style="background-color: #eff6ff;">
+          <td><span class="badge badge-info">ONLY IN B</span></td>
+          <td><span class="badge badge-info">{{ item.group }}</span></td>
+          <td><code>{{ item.tag }}</code></td>
+          <td style="color: var(--text-secondary); font-style: italic;">[Not Present]</td>
+          <td style="color: var(--blue-primary); word-break: break-all;">{{ item.value_b }}</td>
+        </tr>
+        {% endfor %}
+
+        <!-- Matching Tags -->
+        {% for item in diff.matching %}
+        <tr data-category="matching">
+          <td><span class="badge badge-success">MATCHING</span></td>
+          <td><span class="badge badge-info">{{ item.group }}</span></td>
+          <td><code>{{ item.tag }}</code></td>
+          <td style="word-break: break-all; color: var(--text-secondary);">{{ item.value_a }}</td>
+          <td style="word-break: break-all; color: var(--text-secondary);">{{ item.value_b }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

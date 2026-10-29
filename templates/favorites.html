@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Favorites & Bookmarked Records{% endblock %}
+{% block page_title %}Saved Items & Favorites{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div class="card-title">Bookmarked Forensic Records & Resources</div>
+      <div class="card-subtitle">Quickly access pinned investigations, reports, and forensic reference guides</div>
+    </div>
+  </div>
+
+  {% if favorites %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Item Type</th>
+          <th>Title & Identifier</th>
+          <th>Saved Date</th>
+          <th>Action</th>
+          <th>Manage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fav in favorites %}
+        <tr>
+          <td>
+            <span class="badge {% if fav.item_type == 'investigation' %}badge-info{% elif fav.item_type == 'report' %}badge-success{% else %}badge-secondary{% endif %}" style="text-transform: uppercase; font-size: 11px;">
+              {{ fav.item_type }}
+            </span>
+          </td>
+          <td>
+            <strong style="color: var(--navy-primary);">{{ fav.item_title }}</strong>
+            <div style="font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 2px;">
+              Ref: {{ fav.item_id }}
+            </div>
+          </td>
+          <td style="color: var(--text-secondary); font-size: 13px;">{{ fav.created_at }}</td>
+          <td>
+            {% if fav.item_type == 'report' %}
+            <a href="{{ url_for('view_report', inv_id=fav.item_id) }}" class="btn btn-secondary btn-sm" target="_blank">
+              Open Report
+            </a>
+            {% elif fav.item_type == 'guide' %}
+            <a href="{{ url_for('help_center') }}" class="btn btn-secondary btn-sm">
+              Read Guide
+            </a>
+            {% else %}
+            <a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm">
+              Inspect Case
+            </a>
+            {% endif %}
+          </td>
+          <td>
+            <form action="{{ url_for('toggle_favorite') }}" method="POST" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="item_type" value="{{ fav.item_type }}">
+              <input type="hidden" name="item_id" value="{{ fav.item_id }}">
+              <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--error);" title="Remove Bookmark">
+                Remove
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 48px 24px; color: var(--text-secondary);">
+    <div style="font-weight: 600; font-size: 16px; color: var(--navy-primary); margin-bottom: 6px;">No Saved Items Yet</div>
+    <p style="font-size: 13px; max-width: 440px; margin: 0 auto 16px auto;">You can bookmark important investigations, reports, and methodology guides to access them quickly from this workbench page.</p>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm">Browse Case Archive</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

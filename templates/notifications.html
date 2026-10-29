@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Center{% endblock %}
+{% block page_title %}Notification Center{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div class="card-title">Investigation & System Alerts</div>
+      <div class="card-subtitle">Real-time alerts for completed analyses, report generations, and security events</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      {% if notifications %}
+      <form action="{{ url_for('mark_all_notifications_read') }}" method="POST" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Mark All as Read</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if notifications %}
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    {% for notif in notifications %}
+    <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; background-color: {% if not notif.is_read %}#f0fdf4{% else %}#ffffff{% endif %}; border-left: 4px solid {% if not notif.is_read %}var(--blue-primary){% else %}var(--border-color){% endif %}; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <span class="badge {% if notif.category == 'security' %}badge-warning{% elif notif.category == 'report' %}badge-info{% elif notif.category == 'analysis' %}badge-success{% else %}badge-secondary{% endif %}" style="text-transform: uppercase; font-size: 11px;">
+            {{ notif.category }}
+          </span>
+          <strong style="color: var(--navy-primary); font-size: 14px;">{{ notif.title }}</strong>
+          {% if not notif.is_read %}
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--blue-primary);" title="Unread"></span>
+          {% endif %}
+        </div>
+        <p style="color: var(--text-primary); font-size: 13px; margin-bottom: 6px; line-height: 1.4;">
+          {{ notif.message }}
+        </p>
+        <div style="font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono);">
+          {{ notif.created_at }}
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        {% if notif.link %}
+        <a href="{{ notif.link }}" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;">
+          View
+        </a>
+        {% endif %}
+
+        {% if not notif.is_read %}
+        <form action="{{ url_for('mark_notification_read', notif_id=notif.id) }}" method="POST" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px;" title="Mark as Read">
+            Read
+          </button>
+        </form>
+        {% endif %}
+
+        <form action="{{ url_for('delete_notification_route', notif_id=notif.id) }}" method="POST" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 12px; color: var(--error);" title="Dismiss">
+            Dismiss
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 48px 24px; color: var(--text-secondary);">
+    <div style="font-weight: 600; font-size: 16px; color: var(--navy-primary); margin-bottom: 6px;">Notification Center Clean</div>
+    <p style="font-size: 13px; max-width: 420px; margin: 0 auto;">No pending forensic alerts or system notices. You will receive notifications here whenever single analyses or differential comparisons complete.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

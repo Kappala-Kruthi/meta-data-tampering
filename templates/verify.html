@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Cryptographic Hash Verification{% endblock %}
+{% block page_title %}Cryptographic Integrity and Hash Verification{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Cryptographic Hash Verification Tool</div>
+      <div class="card-subtitle">Compute SHA-256 checksums and perform bit-for-bit integrity checks</div>
+    </div>
+  </div>
+
+  <form action="{{ url_for('verify') }}" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div style="font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--navy-primary);">PRIMARY EVIDENCE FILE (REQUIRED)</div>
+        <div class="dropzone">
+          <div class="dropzone-icon-box">1</div>
+          <div class="dropzone-text">Select File 1</div>
+          <div class="dropzone-sub">Target media file</div>
+          <div class="file-preview"></div>
+          <input type="file" name="file_1" required>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight: 600; font-size: 13px; margin-bottom: 6px; color: var(--navy-primary);">SECONDARY COMPARISON FILE (OPTIONAL)</div>
+        <div class="dropzone">
+          <div class="dropzone-icon-box">2</div>
+          <div class="dropzone-text">Select File 2 (Optional)</div>
+          <div class="dropzone-sub">Provide to test for byte duplicate</div>
+          <div class="file-preview"></div>
+          <input type="file" name="file_2">
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 16px;">
+      <button type="submit" class="btn btn-primary">
+        Calculate Hashes and Verify Integrity
+      </button>
+    </div>
+  </form>
+</div>
+
+{% if hash_result %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Verification Results</div>
+      <div class="card-subtitle">Cryptographic digest output</div>
+    </div>
+    {% if hash_result.is_comparison %}
+    <span class="badge {% if hash_result.match %}badge-success{% else %}badge-warning{% endif %}">
+      {% if hash_result.match %}BIT-FOR-BIT IDENTICAL{% else %}DIFFERING BYTES{% endif %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if hash_result.is_comparison %}
+  <div style="background-color: {% if hash_result.match %}var(--success-surface){% else %}var(--warning-surface){% endif %}; border-left: 4px solid {% if hash_result.match %}var(--success){% else %}var(--warning){% endif %}; padding: 14px 18px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 20px; color: var(--navy-primary);">
+    {{ hash_result.summary }}
+  </div>
+  {% endif %}
+
+  <!-- File 1 Hash Output -->
+  <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 14px;">
+    <div style="font-weight: 600; color: var(--navy-primary); margin-bottom: 8px;">FILE 1: {{ hash_result.file_1.file_name }}</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px;">
+      <div>
+        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">File Size:</div>
+        <div style="color: var(--navy-primary); font-size: 13px; font-weight: 500;">{{ hash_result.file_1.file_size_human }} ({{ hash_result.file_1.file_size_bytes }} bytes)</div>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">MD5 Digest (Legacy):</div>
+        <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">{{ hash_result.file_1.md5 }}</div>
+      </div>
+    </div>
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">SHA-256 Digest (Cryptographic Standard):</span>
+        <button type="button" class="btn btn-secondary btn-sm btn-copy" data-copy-text="{{ hash_result.file_1.sha256 }}" style="padding: 2px 6px; font-size: 11px;">Copy SHA-256</button>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 13px; color: var(--navy-primary); word-break: break-all; margin-top: 4px; background-color: #ffffff; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        {{ hash_result.file_1.sha256 }}
+      </div>
+    </div>
+  </div>
+
+  {% if hash_result.file_2 %}
+  <!-- File 2 Hash Output -->
+  <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+    <div style="font-weight: 600; color: var(--navy-primary); margin-bottom: 8px;">FILE 2: {{ hash_result.file_2.file_name }}</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px;">
+      <div>
+        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">File Size:</div>
+        <div style="color: var(--navy-primary); font-size: 13px; font-weight: 500;">{{ hash_result.file_2.file_size_human }} ({{ hash_result.file_2.file_size_bytes }} bytes)</div>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">MD5 Digest (Legacy):</div>
+        <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">{{ hash_result.file_2.md5 }}</div>
+      </div>
+    </div>
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">SHA-256 Digest (Cryptographic Standard):</span>
+        <button type="button" class="btn btn-secondary btn-sm btn-copy" data-copy-text="{{ hash_result.file_2.sha256 }}" style="padding: 2px 6px; font-size: 11px;">Copy SHA-256</button>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 13px; color: var(--navy-primary); word-break: break-all; margin-top: 4px; background-color: #ffffff; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        {{ hash_result.file_2.sha256 }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Educational Forensic Knowledge Box -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Forensic Principles: Interpreting Cryptographic Hashes</div>
+  </div>
+  <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+    <p>&bull; <strong>Cryptographic Collision Resistance:</strong> SHA-256 produces a unique 256-bit (64 hex characters) digest. The chance of two distinct files yielding the exact same hash is astronomically small (less than 1 in 10^77).</p>
+    <p style="margin-top: 8px;">&bull; <strong>Bit-for-Bit Certainty:</strong> If two files have matching SHA-256 hashes, every single bit and byte is identical. They are verified byte duplicates.</p>
+    <p style="margin-top: 8px;">&bull; <strong>Critical Forensic Limitation:</strong> Differing hashes simply indicate that the binary byte sequences are not identical. Re-compression, metadata stripping, format conversion, or pixel editing will all change the hash. <strong>A differing hash does NOT by itself prove malicious manipulation.</strong></p>
+  </div>
+</div>
+{% endblock %}

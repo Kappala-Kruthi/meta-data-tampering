@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRACE - Digital Forensics Workbench</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Public Navigation Bar -->
+  <header class="public-nav">
+    <div class="container">
+      <a href="{{ url_for('landing') }}" class="nav-brand">
+        <span class="trace-nav-icon">
+          <svg width="28" height="28" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 8 15 V 10 C 8 8.9 8.9 8 10 8 H 15" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 27 8 H 32 C 33.1 8 34 8.9 34 10 V 15" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 8 27 V 32 C 8 33.1 8.9 34 10 34 H 15" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 27 34 H 32 C 33.1 34 34 33.1 34 32 V 27" stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="20" r="4.2" stroke="#00C2FF" stroke-width="2.6" fill="none"/>
+            <path d="M 23.2 23.2 L 26.5 26.5" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="trace-brand-titles">
+          <span class="trace-brand-name" style="color: var(--navy-primary);">TRACE</span>
+          <span class="trace-brand-sub" style="color: var(--blue-primary);">FORENSICS WORKBENCH</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="public-nav-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#overview">Overview</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#workflow">How It Works</a></li>
+          <li><a href="#methodology">Methodology</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Login</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="home">
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">Digital Forensics Project</span>
+          <h1 class="hero-title">Metadata Tampering Detection in Media Files</h1>
+          <p class="hero-paragraph">
+            Analyze image metadata, compare file attributes, and inspect integrity indicators through a structured digital forensics workflow powered by ExifTool and SHA-256 hashing.
+          </p>
+          <div class="hero-actions">
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Get Started</a>
+            <a href="#features" class="btn btn-secondary btn-lg">Explore Features</a>
+          </div>
+          <div class="hero-subline">
+            Built with Python, Flask, ExifTool, and SHA-256.
+          </div>
+        </div>
+
+        <div>
+          <!-- TRACE Digital Forensics Workbench Brand Showcase Card -->
+          <div class="trace-brand-card">
+            <div class="trace-icon-wrapper">
+              <svg width="46" height="46" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 8 15 V 10 C 8 8.9 8.9 8 10 8 H 15" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 27 8 H 32 C 33.1 8 34 8.9 34 10 V 15" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 8 27 V 32 C 8 33.1 8.9 34 10 34 H 15" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 27 34 H 32 C 33.1 34 34 33.1 34 32 V 27" stroke="#00C2FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="20" cy="20" r="4.2" stroke="#00C2FF" stroke-width="2.4" fill="none"/>
+                <path d="M 23.2 23.2 L 26.5 26.5" stroke="#00C2FF" stroke-width="2.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="trace-title">TRACE</div>
+            <div class="trace-subtitle">DIGITAL FORENSICS WORKBENCH</div>
+            <div class="trace-divider"></div>
+            <div class="trace-tagline">Uncover the details. Verify the evidence.</div>
+            <div class="trace-subline">Metadata Analysis &middot; Integrity Verification &middot; Evidence Reports</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project Overview Section -->
+  <section class="landing-section landing-section-alt" id="overview">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Understanding Metadata Analysis</h2>
+        <p class="section-desc">
+          Examining internal file structures to corroborate provenance and evaluate digital evidence.
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card" style="margin-bottom: 0;">
+          <h3 style="margin-bottom: 12px; color: var(--navy-primary);">What is metadata?</h3>
+          <p>
+            Metadata is structured information associated with a file, including image dimensions, camera hardware models, exposure parameters, timestamps, software history tags, and embedded geographical location records.
+          </p>
+        </div>
+
+        <div class="card" style="margin-bottom: 0;">
+          <h3 style="margin-bottom: 12px; color: var(--navy-primary);">Why analyze metadata?</h3>
+          <p>
+            Metadata provides crucial investigative context during forensic inquiries. It helps examiners cross-reference related files, trace export histories, and identify chronological or technical inconsistencies that warrant deeper review.
+          </p>
+        </div>
+
+        <div class="card" style="margin-bottom: 0;">
+          <h3 style="margin-bottom: 12px; color: var(--navy-primary);">Why verify file integrity?</h3>
+          <p>
+            Cryptographic hash algorithms produce deterministic digests of file bytes. Comparing SHA-256 hashes establishes whether two media files are bit-for-bit identical or have undergone alteration at the byte level.
+          </p>
+        </div>
+      </div>
+
+      <div style="background-color: var(--warning-surface); border: 1px solid #fef08a; border-radius: var(--radius-md); padding: 16px 20px; margin-top: 24px; font-size: 13px; color: var(--warning);">
+        <strong>Important Forensic Notice:</strong> Metadata analysis provides indicators, not definitive proof of tampering. Metadata may be missing, altered, copied, or changed during ordinary file processing.
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Capabilities Section -->
+  <section class="landing-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Core Forensic Capabilities</h2>
+        <p class="section-desc">
+          Tools for inspecting file metadata, comparing related files, and documenting observations.
+        </p>
+      </div>
+
+      <div class="grid-4">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">01</div>
+          <h4 class="feature-title">Metadata Extraction</h4>
+          <p class="feature-desc">Extract available image metadata across all tag families using the actual ExifTool executable.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">02</div>
+          <h4 class="feature-title">Side-by-Side Comparison</h4>
+          <p class="feature-desc">Compare metadata fields from two files and identify matching, changed, added, and missing values.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">03</div>
+          <h4 class="feature-title">SHA-256 Integrity Verification</h4>
+          <p class="feature-desc">Calculate cryptographic hashes and compare files for mathematical byte-level equality.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">04</div>
+          <h4 class="feature-title">Timestamp Inspection</h4>
+          <p class="feature-desc">Review available date and time fields and identify chronological inconsistencies that require investigation.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">05</div>
+          <h4 class="feature-title">Software Tag Inspection</h4>
+          <p class="feature-desc">Inspect metadata fields that identify graphic software or processing tools when available.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">06</div>
+          <h4 class="feature-title">Anomaly Indicators</h4>
+          <p class="feature-desc">Highlight unusual or inconsistent values using transparent, explainable heuristic rules.</p>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">07</div>
+          <h4 class="feature-title">Investigation Reports</h4>
+          <p class="feature-desc">Export supported findings and observations into printable HTML, CSV, and structured JSON reports.</p>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div class="feature-icon-mark">08</div>
+          <h4 class="feature-title">Investigation History</h4>
+          <p class="feature-desc">Review saved analysis summaries and application-generated investigation audit records.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="landing-section landing-section-alt" id="workflow">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">How the Analysis Process Works</h2>
+        <p class="section-desc">
+          A structured workflow for extracting metadata, comparing files, and documenting observations.
+        </p>
+      </div>
+
+      <div class="grid-4">
+        <div class="step-card">
+          <div class="step-num">Step 01</div>
+          <h4 class="step-title">Select Files</h4>
+          <p class="step-desc">The user selects supported media files (JPEG, PNG, TIFF, WebP, HEIC) for forensic analysis.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">Step 02</div>
+          <h4 class="step-title">Extract Metadata</h4>
+          <p class="step-desc">ExifTool reads the available metadata from each file safely in a read-only subprocess.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">Step 03</div>
+          <h4 class="step-title">Compare and Verify</h4>
+          <p class="step-desc">The application compares metadata fields, identifies differentials, and calculates SHA-256 hashes.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">Step 04</div>
+          <h4 class="step-title">Review Findings</h4>
+          <p class="step-desc">The user reviews differences, evaluates the context, and exports available investigation results.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Methodology Section -->
+  <section class="landing-section" id="methodology">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Methodology and Technical Approach</h2>
+        <p class="section-desc">
+          The roles of each integrated technology in the digital forensic pipeline.
+        </p>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 24px;">
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-bottom: 8px;">ExifTool</h4>
+          <p style="font-size: 14px;">Extracts metadata across all standardized and proprietary tag families without modifying source media.</p>
+        </div>
+
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-bottom: 8px;">Python Backend</h4>
+          <p style="font-size: 14px;">Processes extracted metadata, parses tag families, normalizes values, and executes comparison logic.</p>
+        </div>
+
+        <div class="card" style="margin-bottom: 0;">
+          <h4 style="margin-bottom: 8px;">SHA-256 Hashing</h4>
+          <p style="font-size: 14px;">Calculates deterministic 256-bit cryptographic hashes in streaming memory buffers to verify byte integrity.</p>
+        </div>
+      </div>
+
+      <!-- Flow Diagram -->
+      <div class="flow-diagram">
+        <div class="flow-node">File Upload</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">Validation</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">ExifTool Metadata Extraction</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">Python Comparison & SHA-256</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">Results Review</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-node">Report Export</div>
+      </div>
+
+      <div style="background-color: var(--blue-surface); border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px 18px; font-size: 13px; color: #1e40af;">
+        <strong>Methodology Note:</strong> The application identifies observable differences and potential inconsistencies. A difference does not establish when, how, or why a file changed.
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="landing-section landing-section-alt" id="about">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">About the Project</h2>
+        <p class="section-desc">
+          Applied academic project in computer science and cyber forensics.
+        </p>
+      </div>
+
+      <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+        <p style="font-size: 16px; margin-bottom: 24px;">
+          TRACE is an educational digital forensics workbench developed to demonstrate metadata extraction, file comparison, hash-based integrity checks, and evidence-aware interpretation. It helps students understand how file properties can support an investigation while recognizing the limitations of metadata-based conclusions.
+        </p>
+
+        <div class="info-panel">
+          <div class="info-item">
+            <div class="info-label">Project Domain</div>
+            <div class="info-value">Applied Digital Forensics</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Main Tool</div>
+            <div class="info-value">ExifTool (Phil Harvey)</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Backend</div>
+            <div class="info-value">Python and Flask</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Integrity Algorithm</div>
+            <div class="info-value">SHA-256 Hashing</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Landing CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2 style="margin-bottom: 12px;">Start a Forensic Analysis</h2>
+      <p style="max-width: 600px; margin: 0 auto 24px auto;">
+        Open the analysis workspace to inspect metadata, compare files, and document findings.
+      </p>
+      <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Open Workspace</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="public-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-title">TRACE - Digital Forensics Workbench</div>
+          <p style="font-size: 13px; max-width: 380px;">
+            Applied digital forensics system for media file inspection, cryptographic hash verification, and metadata differential analysis.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-title">Navigation</div>
+          <ul class="footer-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#workflow">How It Works</a></li>
+            <li><a href="#methodology">Methodology</a></li>
+            <li><a href="{{ url_for('login') }}">Login</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-title">Technology Stack</div>
+          <ul class="footer-links">
+            <li>Python 3.13</li>
+            <li>Flask Framework</li>
+            <li>Phil Harvey's ExifTool</li>
+            <li>SHA-256 Cryptographic Hashing</li>
+            <li>SQLite Persistence</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>Academic Project: Metadata Tampering Detection in Media Files Using ExifTool</div>
+        <div>&copy; 2026 TRACE - Digital Forensics Workbench. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -11,7 +11,10 @@ import sqlite3
 from typing import Any, Dict, List, Optional
 from werkzeug.security import check_password_hash, generate_password_hash
 
-DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+if os.environ.get("VERCEL"):
+    DB_DIR = "/tmp/data"
+else:
+    DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 DB_PATH = os.path.join(DB_DIR, "investigations.db")
 
 

@@ -55,6 +55,100 @@ def get_exiftool_version() -> Tuple[bool, str]:
         return False, f"Failed to execute ExifTool: {str(e)}"
 
 
+def _extract_pillow_fallback(file_path: str) -> Dict[str, Any]:
+    """
+    Fallback metadata extraction using Pillow when ExifTool binary is not installed
+    (e.g., inside serverless cloud environments such as Vercel / AWS Lambda).
+    """
+    if not os.path.isfile(file_path):
+        return {
+            "success": False,
+            "error": f"File does not exist: {file_path}",
+            "raw": {},
+            "groups": {},
+            "summary": {},
+            "tag_count": 0,
+        }
+
+    raw: Dict[str, Any] = {}
+    groups: Dict[str, Dict[str, Any]] = {"File": {}, "EXIF": {}, "GPS": {}, "Composite": {}}
+    summary: Dict[str, Any] = {}
+
+    file_size = os.path.getsize(file_path)
+    file_name = os.path.basename(file_path)
+    ext = os.path.splitext(file_name)[1].lower().lstrip(".")
+    fmt = "JPEG" if ext in ("jpg", "jpeg") else ext.upper()
+
+    raw["File:FileName"] = file_name
+    raw["File:FileSize"] = file_size
+    raw["File:FileType"] = fmt
+    raw["File:MIMEType"] = f"image/{ext if ext != 'jpg' else 'jpeg'}"
+
+    groups["File"]["FileName"] = file_name
+    groups["File"]["FileSize"] = file_size
+    groups["File"]["FileType"] = fmt
+    groups["File"]["MIMEType"] = raw["File:MIMEType"]
+
+    summary["file_name"] = file_name
+    summary["file_size"] = file_size
+    summary["file_type"] = fmt
+    summary["mime_type"] = raw["File:MIMEType"]
+
+    try:
+        from PIL import Image, ExifTags
+        with Image.open(file_path) as img:
+            w, h = img.size
+            raw["File:ImageWidth"] = w
+            raw["File:ImageHeight"] = h
+            groups["File"]["ImageWidth"] = w
+            groups["File"]["ImageHeight"] = h
+            summary["image_width"] = w
+            summary["image_height"] = h
+
+            exif_data = img._getexif()
+            if exif_data:
+                for tag_id, value in exif_data.items():
+                    tag_name = ExifTags.TAGS.get(tag_id, f"Tag_{tag_id}")
+                    if tag_name == "GPSInfo" and isinstance(value, dict):
+                        gps_dict = {}
+                        for t in value:
+                            sub_tag = ExifTags.GPSTAGS.get(t, t)
+                            gps_dict[sub_tag] = value[t]
+                            raw[f"GPS:{sub_tag}"] = str(value[t])
+                            groups["GPS"][sub_tag] = str(value[t])
+                        if "GPSLatitude" in gps_dict and "GPSLongitude" in gps_dict:
+                            lat = gps_dict["GPSLatitude"]
+                            lat_ref = gps_dict.get("GPSLatitudeRef", "N")
+                            lon = gps_dict["GPSLongitude"]
+                            lon_ref = gps_dict.get("GPSLongitudeRef", "E")
+                            raw["GPSLatitude"] = f"{lat[0]} deg {lat[1]}' {float(lat[2]):.2f}\" {lat_ref}"
+                            raw["GPSLongitude"] = f"{lon[0]} deg {lon[1]}' {float(lon[2]):.2f}\" {lon_ref}"
+                            raw["GPSLatitudeRef"] = lat_ref
+                            raw["GPSLongitudeRef"] = lon_ref
+                    else:
+                        val_str = str(value)
+                        raw[f"EXIF:{tag_name}"] = val_str
+                        raw[tag_name] = val_str
+                        groups["EXIF"][tag_name] = val_str
+
+                summary["camera_make"] = raw.get("Make") or raw.get("EXIF:Make")
+                summary["camera_model"] = raw.get("Model") or raw.get("EXIF:Model")
+                summary["date_taken"] = raw.get("DateTimeOriginal") or raw.get("EXIF:DateTimeOriginal")
+                summary["date_modified"] = raw.get("ModifyDate") or raw.get("DateTime") or raw.get("EXIF:ModifyDate")
+                summary["software"] = raw.get("Software") or raw.get("EXIF:Software")
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "raw": raw,
+        "groups": groups,
+        "summary": summary,
+        "tag_count": len(raw),
+        "extractor": "Pillow / Python EXIF Fallback",
+    }
+
+
 def extract_metadata(file_path: str, timeout: int = 30) -> Dict[str, Any]:
     """
     Executes ExifTool against a file and parses structured JSON output.
@@ -69,6 +163,8 @@ def extract_metadata(file_path: str, timeout: int = 30) -> Dict[str, Any]:
     """
     binary = find_exiftool_binary()
     if not binary:
+        if os.environ.get("VERCEL"):
+            return _extract_pillow_fallback(file_path)
         return {
             "success": False,
             "error": "ExifTool executable not found.",

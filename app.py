@@ -47,8 +47,23 @@ from reports.report_generator import (
     generate_single_analysis_report,
 )
 
-# Initialize Flask App
-app = Flask(__name__)
+# Directories
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+if os.environ.get("VERCEL"):
+    UPLOAD_FOLDER = "/tmp/uploads"
+    SANITIZED_FOLDER = "/tmp/sanitized"
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+    SANITIZED_FOLDER = os.path.join(BASE_DIR, "data", "sanitized")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(SANITIZED_FOLDER, exist_ok=True)
+
+# Initialize Flask App with explicit folder paths for serverless reliability
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static"),
+)
 
 # Security & Session Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or os.urandom(32)
@@ -61,17 +76,6 @@ app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "F
 # Authentication Credentials Configuration (Configurable via Environment Variables)
 DEMO_USER_ID = os.environ.get("FORENSIC_USER_ID", "Bhuvana@123")
 DEMO_PASSWORD = os.environ.get("FORENSIC_PASSWORD", "123")
-
-# Directories
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-if os.environ.get("VERCEL"):
-    UPLOAD_FOLDER = "/tmp/uploads"
-    SANITIZED_FOLDER = "/tmp/sanitized"
-else:
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-    SANITIZED_FOLDER = os.path.join(BASE_DIR, "data", "sanitized")
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(SANITIZED_FOLDER, exist_ok=True)
 
 # Allowed file extensions for evidence
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "tif", "tiff", "heic", "heif"}
@@ -135,6 +139,8 @@ def login_required(f):
 # ----------------- PUBLIC ROUTES -----------------
 
 @app.route("/")
+@app.route("/api/index")
+@app.route("/api/index.py")
 def landing():
     """Public landing page introducing the digital forensics system."""
     return render_template("landing.html")

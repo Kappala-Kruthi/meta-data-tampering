@@ -1,0 +1,18 @@
+{
+  "name": "trace-digital-forensics",
+  "version": "1.0.0",
+  "description": "TRACE: Advanced Digital Forensics System for Metadata Tampering Detection",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "lucide-react": "^0.453.0"
+  }
+}

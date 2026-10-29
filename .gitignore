@@ -26,3 +26,9 @@ tools/exiftool.exe
 .vscode/
 .idea/
 Thumbs.db
+
+.vercel
+.env*
+node_modules/
+.next/
+node_modules

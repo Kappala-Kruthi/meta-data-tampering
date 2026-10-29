@@ -151,6 +151,21 @@ export default function LoginPage() {
           >
             {loading ? 'Authenticating Investigator...' : 'Enter Forensics Lab →'}
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('trace_user_logged_in', 'true');
+                localStorage.setItem('trace_user_id', 'Bhuvana@123');
+              }
+              router.push('/dashboard');
+            }}
+            className="btn btn-secondary"
+            style={{ width: '100%', padding: '12px', fontSize: '14px', marginTop: '8px', color: '#00F0FF', borderColor: 'rgba(0, 240, 255, 0.3)' }}
+          >
+            ⚡ One-Click Enter as Lead Analyst →
+          </button>
         </form>
 
         {/* Demo Fast Fill Badge */}

@@ -101,8 +101,8 @@ export default function RootLayout({ children }) {
               <span className="badge badge-emerald">
                 ● LAB ONLINE
               </span>
-              <Link href="/login" className="btn btn-cyber" style={{ padding: '6px 14px', fontSize: '13px' }}>
-                Investigator Login
+              <Link href="/dashboard" className="btn btn-cyber" style={{ padding: '6px 14px', fontSize: '13px' }}>
+                Open Hub →
               </Link>
             </div>
           </div>

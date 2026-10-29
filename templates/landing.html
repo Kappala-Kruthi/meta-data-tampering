@@ -39,7 +39,7 @@
           <li><a href="#workflow">How It Works</a></li>
           <li><a href="#methodology">Methodology</a></li>
           <li><a href="#about">About</a></li>
-          <li><a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Login</a></li>
+          <li><a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">Launch Hub</a></li>
         </ul>
       </nav>
     </div>
@@ -56,8 +56,8 @@
             Analyze image metadata, compare file attributes, and inspect integrity indicators through a structured digital forensics workflow powered by ExifTool and SHA-256 hashing.
           </p>
           <div class="hero-actions">
-            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Get Started</a>
-            <a href="#features" class="btn btn-secondary btn-lg">Explore Features</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Launch Forensics Hub</a>
+            <a href="{{ url_for('single_analysis') }}" class="btn btn-secondary btn-lg">Inspect Single Image</a>
           </div>
           <div class="hero-subline">
             Built with Python, Flask, ExifTool, and SHA-256.
@@ -327,7 +327,7 @@
       <p style="max-width: 600px; margin: 0 auto 24px auto;">
         Open the analysis workspace to inspect metadata, compare files, and document findings.
       </p>
-      <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Open Workspace</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Open Workspace →</a>
     </div>
   </section>
 

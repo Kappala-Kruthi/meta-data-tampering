@@ -277,8 +277,8 @@ export default function HomePage() {
         <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginBottom: '28px', maxWidth: '580px', margin: '0 auto 28px auto' }}>
           Open the dedicated investigator workspace to run single deep inspections or multi-image comparison matrices.
         </p>
-        <Link href="/login" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
-          Sign In to Workspace →
+        <Link href="/dashboard" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
+          Launch Forensics Hub →
         </Link>
       </section>
     </div>

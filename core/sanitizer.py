@@ -64,20 +64,33 @@ def sanitize_media_file(
             output_path,
         ]
 
-    try:
-        proc = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=30,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(f"ExifTool sanitization failed: {proc.stderr}")
-    except Exception as e:
-        if os.path.exists(output_path):
-            os.remove(output_path)
-        raise RuntimeError(f"Error executing metadata sanitization: {str(e)}")
+    sanitized_via_exiftool = False
+    if exiftool_bin and not os.environ.get("VERCEL"):
+        try:
+            proc = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=30,
+            )
+            if proc.returncode == 0:
+                sanitized_via_exiftool = True
+        except Exception:
+            sanitized_via_exiftool = False
+
+    if not sanitized_via_exiftool:
+        # Robust fallback using Pillow to scrub metadata when ExifTool is unavailable
+        try:
+            from PIL import Image
+            with Image.open(input_path) as img:
+                clean_img = Image.new(img.mode, img.size)
+                clean_img.putdata(list(img.getdata()))
+                clean_img.save(output_path)
+        except Exception as e:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            raise RuntimeError(f"Error executing metadata sanitization: {str(e)}")
 
     # 4. Compute sanitized file metrics and metadata
     sanitized_size = os.path.getsize(output_path)

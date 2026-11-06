@@ -61,6 +61,10 @@ class VercelPathMiddleware:
 
         environ["PATH_INFO"] = target_path
 
+        # Ensure Flask recognizes HTTPS on Vercel's reverse proxy
+        if environ.get("HTTP_X_FORWARDED_PROTO") == "https":
+            environ["wsgi.url_scheme"] = "https"
+
         return self.wsgi_app(environ, start_response)
 
 
